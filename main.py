@@ -1,52 +1,11 @@
 from flask import Flask, render_template, redirect, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_user import current_user, login_required, UserManager, UserMixin, SQLAlchemyAdapter, roles_required
-import config
+import config.config as config_app
 
 app = Flask(__name__)
-
-def config_attribute(attr):
-    '''
-    Configs the app with the more sensitive data found in config.py.
-    '''
-    app.config[attr] = config.app_configs[attr]
-
-config_attribute("SQLALCHEMY_DATABASE_URI")
-config_attribute("SQLALCHEMY_POOL_RECYCLE")
-config_attribute("SQLALCHEMY_TRACK_MODIFICATIONS")
-config_attribute("MAIL_SERVER")
-config_attribute("MAIL_USERNAME")
-config_attribute("MAIL_PASSWORD")
-config_attribute("MAIL_DEFAULT_SENDER")
-config_attribute("MAIL_PORT")
-config_attribute("MAIL_USE_SSL")
-config_attribute("MAIL_USE_TLS")
-config_attribute("SECRET_KEY")
-
+config_app.config_app(app)
 db = SQLAlchemy(app)
-
-app.config['CSRF_ENABLED'] = True
-app.config['USER_ENABLE_EMAIL'] = True
-app.config['USER_APP_NAME'] = 'Anaximander'
-app.config['USER_ENABLE_INVITATION'] = True
-app.config['USER_REQUIRE_INVITATION'] = True
-
-app.config['USER_CHANGE_PASSWORD_URL'] = '/settings/change-password/'
-app.config['USER_ENABLE_CHANGE_USERNAME'] = True
-app.config['USER_CHANGE_USERNAME_URL'] = '/settings/change-username/'
-app.config['USER_CONFIRM_EMAIL_URL'] = '/auth/confirm-email/<token>/'
-app.config['USER_FORGOT_PASSWORD_URL'] = '/auth/forgot-password/'
-app.config['USER_LOGIN_URL'] = '/auth/login/'
-app.config['USER_LOGOUT_URL'] = '/auth/logout/'
-app.config['USER_REGISTER_URL'] = '/auth/register/'
-app.config['USER_RESEND_CONFIRM_EMAIL_URL'] = '/auth/resend-confirmation-email/'
-app.config['USER_RESET_PASSWORD_URL'] = '/auth/reset-password/<token>/'
-app.config['USER_PROFILE_URL'] = '/error'   # tbd...
-app.config['USER_INVITE_URL'] = '/invite'   # might change
-app.config['USER_INVITE_ENDPOINT'] = 'user.login'
-app.config['USER_PROFILE_TEMPLATE'] = 'error.html'  # tbd...
-app.config['USER_UNAUTHENTICATED_ENDPOINT'] = "home_page"
-app.config['USER_UNAUTHORIZED_ENDPOINT'] = "home_page"
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
@@ -65,7 +24,7 @@ class User(db.Model, UserMixin):
     seen = db.Column(db.DateTime())
 
     # Relationships
-    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
+    roles = db.relationship('Role', secondary = 'user_roles', backref = db.backref('users', lazy='dynamic'))
 
 class Role(db.Model):
     id = db.Column(db.Integer(), primary_key = True)
