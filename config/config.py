@@ -27,7 +27,8 @@ def config_app(app):
     app.config['USER_LOGIN_URL'] = '/auth/login/'
     app.config['USER_LOGOUT_URL'] = '/auth/logout/'
     app.config['USER_REGISTER_URL'] = '/auth/register/'
-    app.config['USER_RESEND_CONFIRM_EMAIL_URL'] = '/auth/resend-confirmation-email/'
+    #app.config['USER_RESEND_CONFIRM_EMAIL_URL'] = '/auth/resend-confirmation-email/'
+    app.config['USER_RESEND_EMAIL_CONFIRMATION_URL'] = '/auth/resend-confirmation-email/'
     app.config['USER_RESET_PASSWORD_URL'] = '/auth/reset-password/<token>/'
     app.config['USER_PROFILE_URL'] = '/error'   # tbd...
     app.config['USER_INVITE_URL'] = '/invite'   # might change

@@ -15,7 +15,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable = False, server_default = '')
     active = db.Column(db.Boolean(), nullable = False, server_default = '0')
     email = db.Column(db.String(255), nullable = False, unique = True)
-    confirmed_at = db.Column(db.DateTime())
+    email_confirmed_at = db.Column(db.DateTime())
 
     first_name = db.Column(db.String(100), nullable = False, server_default = '')
     last_name = db.Column(db.String(100), nullable = False, server_default = '')
@@ -56,6 +56,7 @@ def make_initial_user(username, password, email):
     new_user.username = username
     new_user.password = user_manager.hash_password(password)
     new_user.email = email
+    new_user.active = True
     db.session.add(new_user)
     db.session.commit()
 
