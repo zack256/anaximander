@@ -44,9 +44,17 @@ class UserInvitation(db.Model):
 
 user_manager = UserManager(app, db, User)
 
-@app.route('/')
+@app.route("/")
 def home_page_view():
     return "Home Page, cool."
+
+@app.route("/users/<username>")
+@app.route("/users/<username>/")
+def user_page_view(username):
+    requested_user = User.query.filter(User.username == username).first()
+    if requested_user == None:
+        return "User not found."
+    return requested_user.username + " has been a member since " + str(requested_user.email_confirmed_at) + "."
 
 def make_initial_user(username, password, email):
     users = User.query.all()
