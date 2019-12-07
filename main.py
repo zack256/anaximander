@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request
+from flask import Flask, render_template, redirect, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_user import current_user, login_required, UserManager, UserMixin, SQLAlchemyAdapter, roles_required
 import config.config as config_app
@@ -101,6 +101,55 @@ def add_article_to_db(article_name, author):
     db.session.add(new_article)
     db.session.commit()
     return True
+
+@app.route("/assets/<path:file_path>")
+def get_asset_file(file_path):
+    path = config.paths.WORKING_DIR + "assets/"
+    return send_from_directory(path, file_path, as_attachment = True)
+
+def get_presentable_date(utc_date):
+    est_date = utc_date - datetime.timedelta(hours = 4)
+    return str(est_date.month) + "/" + str(est_date.day) + "/" + str(est_date.year)
+
+@app.route("/news/article/<requested>")
+@app.route("/news/article/<requested>/")
+def news_article_handler(requested):
+    article = NewsArticle.query.filter(NewsArticle.name == requested).first()
+    if article == None:
+        return "Article not found!"
+    article_file_path = config.paths.NEWS_ARTICLES_DIR + article.name + ".txt"
+    if not os.path.isfile(article_file_path):
+        return "Error - Article in database but not in file system."
+    author = article.author
+    with open(article_file_path) as article_file:
+        lines = article_file.readlines()
+    title = lines.pop(0)
+    blank = lines.pop(0)
+    paragraphs = lines
+    date_made = get_presentable_date(article.created)
+    return render_template("news/article.html", paragraphs = paragraphs, title = title, author = author, date_made = date_made)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
