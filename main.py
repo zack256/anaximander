@@ -30,6 +30,7 @@ class User(db.Model, UserMixin):
     # Relationships
     roles = db.relationship('Role', secondary = 'user_roles', backref = db.backref('users', lazy='dynamic'))
     news = db.relationship("NewsArticle", backref = "author")
+    news_tags = db.relationship("NewsTag", backref = "author")
 
 class Role(db.Model):
     id = db.Column(db.Integer(), primary_key = True)
@@ -47,12 +48,24 @@ class UserInvitation(db.Model):
     invited_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     token = db.Column(db.String(100), nullable = False, server_default = '')
 
+article_tags = db.Table("article_tags", db.Column("article_id", db.Integer, db.ForeignKey("news.id")), db.Column("tag_id", db.Integer, db.ForeignKey("newstags.id")))
+
 class NewsArticle(db.Model):
     __tablename__ = "news"
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(255), nullable = False, unique = True)
     created = db.Column(db.DateTime())
     author_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    tags = db.relationship("NewsTag", secondary = article_tags)
+
+class NewsTag(db.Model):
+    __tablename__ = "newstags"
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(40), nullable = False, unique = True)
+    description = db.Column(db.String(400), nullable = False)
+    created = db.Column(db.DateTime())
+    author_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    articles = db.relationship("NewsArticle", secondary = article_tags)
 
 user_manager = UserManager(app, db, User)
 
@@ -86,6 +99,9 @@ def get_est_date():
 def check_if_valid_article_name(name):
     return len(name) <= 255 and re.search(r"^[a-zA-Z0-9-]+$", name)
 
+def check_if_valid_tag_name(name):
+    return len(name) <= 40 and re.search(r"^[a-z0-9-]+$", name)
+
 def add_article_to_db(article_name, author):
     # adds article in file sys to db.
     if not check_if_valid_article_name(article_name):
@@ -102,6 +118,19 @@ def add_article_to_db(article_name, author):
     db.session.commit()
     return True
 
+def add_news_tag_to_db(name, description, author):
+    if not check_if_valid_tag_name(name):
+        app.logger.error("Invalid tag name.")
+        return False
+    new_tag = NewsTag()
+    new_tag.name = name
+    new_tag.description = description
+    new_tag.created = datetime.datetime.now()
+    new_tag.author_id = author.id
+    db.session.add(new_tag)
+    db.session.commit()
+    return True
+
 @app.route("/assets/<path:file_path>")
 def get_asset_file(file_path):
     path = config.paths.WORKING_DIR + "assets/"
@@ -111,8 +140,8 @@ def get_presentable_date(utc_date):
     est_date = utc_date - datetime.timedelta(hours = 4)
     return str(est_date.month) + "/" + str(est_date.day) + "/" + str(est_date.year)
 
-@app.route("/news/article/<requested>")
-@app.route("/news/article/<requested>/")
+@app.route("/news/articles/<requested>")
+@app.route("/news/articles/<requested>/")
 def news_article_handler(requested):
     article = NewsArticle.query.filter(NewsArticle.name == requested).first()
     if article == None:
@@ -121,18 +150,31 @@ def news_article_handler(requested):
     if not os.path.isfile(article_file_path):
         return "Error - Article in database but not in file system."
     author = article.author
+    tags = article.tags
     with open(article_file_path) as article_file:
         lines = article_file.readlines()
     title = lines.pop(0)
     blank = lines.pop(0)
     paragraphs = lines
     date_made = get_presentable_date(article.created)
-    return render_template("news/article.html", paragraphs = paragraphs, title = title, author = author, date_made = date_made)
+    return render_template("news/article.html", paragraphs = paragraphs, title = title, author = author, date_made = date_made, tags = tags)
 
-
-
-
-
+@app.route("/news/tags/<requested>")
+@app.route("/news/tags/<requested>/")
+def news_tag_handler(requested):
+    tag = NewsTag.query.filter(NewsTag.name == requested).first()
+    if tag == None:
+        return "Tag not found!"
+    author = tag.author
+    articles = tag.articles
+    article_lists = []
+    for article in articles:
+        path = config.paths.NEWS_ARTICLES_DIR + article.name + ".txt"
+        with open(path) as file:
+            title = file.readline()
+        article_lists.append([title, article.created, article.name])
+    article_lists = sorted(article_lists, key = lambda x : x[1], reverse = True)
+    return render_template("news/tag.html", article_lists = article_lists, tag = tag, author = author, est_date = get_presentable_date)
 
 
 

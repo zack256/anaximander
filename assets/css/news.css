@@ -1,3 +1,9 @@
 body {
 	padding : 4em !important;
 }
+.subtitle {
+    margin-bottom : 0 !important;
+}
+.news-tag a {
+    color : white !important;
+}
