@@ -6,6 +6,7 @@ import config.paths
 import os
 import datetime
 import re
+import constants
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -159,24 +160,46 @@ def news_article_handler(requested):
     date_made = get_presentable_date(article.created)
     return render_template("news/article.html", paragraphs = paragraphs, title = title, author = author, date_made = date_made, tags = tags)
 
+def get_article_list_for_display(articles, user_dict):
+    article_lists = []
+    for article in articles:
+        path = config.paths.NEWS_ARTICLES_DIR + article.name + ".txt"
+        with open(path) as file:
+            title = file.readline()
+        author = user_dict[article.author_id]
+        article_lists.append([title, article.created, article.name, author])
+    return article_lists
+
+def get_user_dict(users):
+    d = {}
+    for user in users:
+        d[user.id] = user
+    return d
+
 @app.route("/news/tags/<requested>")
 @app.route("/news/tags/<requested>/")
 def news_tag_handler(requested):
     tag = NewsTag.query.filter(NewsTag.name == requested).first()
     if tag == None:
         return "Tag not found!"
-    author = tag.author
+    users = User.query.all()
     articles = tag.articles
-    article_lists = []
-    for article in articles:
-        path = config.paths.NEWS_ARTICLES_DIR + article.name + ".txt"
-        with open(path) as file:
-            title = file.readline()
-        article_lists.append([title, article.created, article.name])
+    user_dict = get_user_dict(users)
+    author = user_dict[tag.author_id]
+    article_lists = get_article_list_for_display(articles, user_dict)
     article_lists = sorted(article_lists, key = lambda x : x[1], reverse = True)
     return render_template("news/tag.html", article_lists = article_lists, tag = tag, author = author, est_date = get_presentable_date)
 
-
+@app.route("/news")
+@app.route("/news/")
+def news_page_handler():
+    articles = NewsArticle.query.all()
+    users = User.query.all()
+    articles = sorted(articles, key = lambda x : x.created, reverse = True)
+    articles = articles[:constants.NEWS_PAGE_HOME_MAX_ARTICLES_DISPLAYED]
+    user_dict = get_user_dict(users)
+    article_lists = get_article_list_for_display(articles, user_dict)
+    return render_template("news/home.html", article_lists = article_lists, est_date = get_presentable_date)
 
 
 
