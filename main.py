@@ -160,14 +160,17 @@ def news_article_handler(requested):
     date_made = get_presentable_date(article.created)
     return render_template("news/article.html", paragraphs = paragraphs, title = title, author = author, date_made = date_made, tags = tags)
 
-def get_article_list_for_display(articles, user_dict):
+def get_article_list_for_display(articles, user_dict = None):
     article_lists = []
     for article in articles:
         path = config.paths.NEWS_ARTICLES_DIR + article.name + ".txt"
         with open(path) as file:
             title = file.readline()
-        author = user_dict[article.author_id]
-        article_lists.append([title, article.created, article.name, author])
+        article_list = [title, article.created, article.name]
+        if user_dict:
+            author = user_dict[article.author_id]
+            article_list.append(author)
+        article_lists.append(article_list)
     return article_lists
 
 def get_user_dict(users):
@@ -201,6 +204,14 @@ def news_page_handler():
     article_lists = get_article_list_for_display(articles, user_dict)
     return render_template("news/home.html", article_lists = article_lists, est_date = get_presentable_date)
 
+@app.route("/news/authors/<requested>")
+@app.route("/news/authors/<requested>/")
+def news_author_handler(requested):
+    user = User.query.filter(User.username == requested).first()
+    articles = user.news
+    articles = sorted(articles, key = lambda x : x.created, reverse = True)
+    article_lists = get_article_list_for_display(articles)
+    return render_template("news/author.html", article_lists = article_lists, est_date = get_presentable_date, author = user)
 
 
 

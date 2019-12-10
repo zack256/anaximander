@@ -9,7 +9,7 @@
 	</head>
 	<body>
 		<h3 class = "title is-3">Tag : {{ tag.name }}</h3>
-		<h5 class = "subtitle is-5">Created by <a href = "/users/{{ author.username }}/">{{ author.username }}</a> at {{ est_date(tag.created) }} EST.</h5>
+		<h5 class = "subtitle is-5">Created by <a href = "/news/authors/{{ author.username }}/">{{ author.username }}</a> at {{ est_date(tag.created) }} EST.</h5>
 		<br/>
 		<p>{{ tag.description }}</p>
 		<br/>
