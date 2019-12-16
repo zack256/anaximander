@@ -32,6 +32,9 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary = 'user_roles', backref = db.backref('users', lazy='dynamic'))
     news = db.relationship("NewsArticle", backref = "author")
     news_tags = db.relationship("NewsTag", backref = "author")
+    wikis = db.relationship("Wiki", backref = "creator")
+    articles = db.relationship("Article", backref = "creator")
+    diffs = db.relationship("Diff", backref = "editor")
 
 class Role(db.Model):
     id = db.Column(db.Integer(), primary_key = True)
@@ -67,6 +70,39 @@ class NewsTag(db.Model):
     created = db.Column(db.DateTime())
     author_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     articles = db.relationship("NewsArticle", secondary = article_tags)
+
+class Wiki(db.Model):
+    __tablename__ = "wikis"
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(80), nullable = False)
+    created = db.Column(db.DateTime())
+    creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    articles = db.relationship("Article", backref = "wiki")
+
+class Article(db.Model):
+    __tablename__ = "articles"
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(80), nullable = False)
+    created = db.Column(db.DateTime())
+    creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id', ondelete = 'CASCADE'))
+    diffs = db.relationship("Diff", backref = "article")
+
+class Diff(db.Model):
+    __tablename__ = "diffs"
+    id = db.Column(db.Integer, primary_key = True)
+    created = db.Column(db.DateTime())
+    editor_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    article_id = db.Column(db.Integer(), db.ForeignKey('articles.id', ondelete = 'CASCADE'))
+    sub_diffs = db.relationship("SubDiff", backref = "diff")
+
+class SubDiff(db.Model):
+    __tablename__ = "subdiffs"
+    id = db.Column(db.Integer, primary_key = True)
+    diff_id = db.Column(db.Integer(), db.ForeignKey('diffs.id', ondelete = 'CASCADE'))
+    operation = db.Column(db.Boolean(), nullable = False)   # Subtraction (0) or Addition (1).
+    index = db.Column(db.Integer())
+    content = db.Column(db.String(4096))
 
 user_manager = UserManager(app, db, User)
 
