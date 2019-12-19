@@ -5,8 +5,8 @@ import config.config as config_app
 import config.paths
 import os
 import datetime
-import re
 import constants
+import restrict
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -133,15 +133,9 @@ def make_initial_user(username, password, email):
 def get_est_date():
     return datetime.datetime.now() - datetime.timedelta(hours = 4)
 
-def check_if_valid_article_name(name):
-    return len(name) <= 255 and re.search(r"^[a-zA-Z0-9-]+$", name)
-
-def check_if_valid_tag_name(name):
-    return len(name) <= 40 and re.search(r"^[a-z0-9-]+$", name)
-
 def add_article_to_db(article_name, author):
     # adds article in file sys to db.
-    if not check_if_valid_article_name(article_name):
+    if not restrict.check_if_valid_news_article_name(article_name):
         app.logger.error("Invalid article name.")
         return False
     if not os.path.isfile(config.paths.NEWS_ARTICLES_DIR + article_name + ".txt"):
@@ -156,7 +150,7 @@ def add_article_to_db(article_name, author):
     return True
 
 def add_news_tag_to_db(name, description, author):
-    if not check_if_valid_tag_name(name):
+    if not restrict.check_if_valid_news_tag_name(name):
         app.logger.error("Invalid tag name.")
         return False
     new_tag = NewsTag()
@@ -248,9 +242,6 @@ def news_author_handler(requested):
     articles = sorted(articles, key = lambda x : x.created, reverse = True)
     article_lists = get_article_list_for_display(articles)
     return render_template("news/author.html", article_lists = article_lists, est_date = get_presentable_date, author = user)
-
-
-
 
 
 

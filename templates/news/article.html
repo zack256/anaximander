@@ -10,6 +10,7 @@
 	<body>
 		<h3 class = "title is-3">{{ title }}</h3>
 		<h5 class = "subtitle is-5">Written by <a href = "/news/authors/{{ author.username }}/">{{ author.username }}</a> at {{ date_made }} EST.</h5>
+		<br/>
 		{% if tags|length > 0 %}
 		<div class="tags are-medium">
 		    {% for tag in tags %}
