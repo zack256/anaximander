@@ -74,7 +74,8 @@ class NewsTag(db.Model):
 class Wiki(db.Model):
     __tablename__ = "wikis"
     id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(80), nullable = False)
+    name = db.Column(db.String(80), nullable = False, unique = True)
+    description = db.Column(db.String(200))
     created = db.Column(db.DateTime())
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     articles = db.relationship("Article", backref = "wiki")
@@ -243,6 +244,26 @@ def news_author_handler(requested):
     article_lists = get_article_list_for_display(articles)
     return render_template("news/author.html", article_lists = article_lists, est_date = get_presentable_date, author = user)
 
+def add_wiki(name, description, creator):
+    if not restrict.check_if_valid_wiki_name(name):
+        app.logger.error("Invalid wiki name.")
+        return False
+    if Wiki.query.filter(Wiki.name == name).first():
+        app.logger.error("Wiki already exists!")
+        return False
+    wiki_dir_path = config.paths.WIKIS_DIR + name
+    if os.path.isdir(wiki_dir_path):
+        app.logger.error("Wiki still has a directory that possibly contains files.")
+        return False
+    created = datetime.datetime.now()
+    new_wiki = Wiki()
+    new_wiki.name = name
+    new_wiki.description = description
+    new_wiki.created = created
+    new_wiki.creator_id = creator.id
+    db.session.add(new_wiki)
+    db.session.commit()
+    return True
 
 
 
