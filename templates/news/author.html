@@ -1,20 +1,13 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset = "utf-8">
-		<meta http-equiv = "cache-control" content = "no-cache">
-		<title>Articles by {{ author.username }}</title>
-		<link rel = "stylesheet" href = "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css"/>
-		<link rel = "stylesheet" href = "/assets/css/news.css">
-	</head>
-	<body>
-		<h3 class = "title is-3">Articles by {{ author.username }}</h3>
-		<br/>
-        {% for article_list in article_lists %}
-        <h5 class = "subtitle is-5"><a href = "/news/articles/{{ article_list[2] }}/">{{ article_list[0] }}</a></h5>
-		<p>Written {{ est_date(article_list[1]) }}.</p>
-		<br/>
-		{% endfor %}
-		<h5 class = "subtitle is-5"><a href = "/news/">Back to News</a></h5>
-	</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Articles by {{ author.username }}{% endblock %}
+{% block more_top %}<link rel = "stylesheet" href = "/assets/css/news.css">{% endblock %}
+{% block content %}
+<h3 class = "title is-3">Articles by {{ author.username }}</h3>
+<br/>
+{% for article_list in article_lists %}
+<h5 class = "subtitle is-5"><a href = "/news/articles/{{ article_list[2] }}/">{{ article_list[0] }}</a></h5>
+<p>Written {{ est_date(article_list[1]) }}.</p>
+<br/>
+{% endfor %}
+<h5 class = "subtitle is-5"><a href = "/news/">Back to News</a></h5>
+{% endblock %}
