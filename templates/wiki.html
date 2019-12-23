@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ wiki.full }}{% endblock %}
+{% block more_top %}<link rel = "stylesheet" href = "/assets/css/news.css">{% endblock %}
+{% block content %}
+<h3 class = "title is-3">Wiki Homepage - {{ wiki.full }}</h3>
+<h5 class = "subtitle is-5">{{ wiki.description }}</h5>
+<p>Created : {{ wiki.created }} by <a href = "/users/{{ creator.username }}/">{{ creator.username }}</a></p>
+<p>Short Name : {{ wiki.name }}</p>
+<h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
+{% endblock %}

@@ -11,7 +11,7 @@ def check_if_valid_news_tag_name(name):
     return check_valid_base(name, 40, r"^[a-z0-9-]+$")
 
 def check_if_valid_wiki_article_name(name):
-    return name[0] != string.ascii_lowercase + "_" and check_valid_base(name, 80, r"^([_]?[a-zA-Z0-9().,!~*\-[\]{}])+$")    # Article name cannot start with a lowercase letter or a space (underscore).
+    return name[0] not in string.ascii_lowercase + "_" and check_valid_base(name, 80, r"^([_]?[a-zA-Z0-9().,!~*\-[\]{}])+$")    # Article name cannot start with a lowercase letter or a space (underscore).
 
 def check_if_valid_wiki_name(name):
     return check_valid_base(name, 80, r"^[a-z0-9\-_]+$")

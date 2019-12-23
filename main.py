@@ -74,7 +74,8 @@ class NewsTag(db.Model):
 class Wiki(db.Model):
     __tablename__ = "wikis"
     id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(80), nullable = False, unique = True)
+    name = db.Column(db.String(80), nullable = False, unique = True)    # short name.
+    full = db.Column(db.String(80), nullable = False, unique = True)    # long name.
     description = db.Column(db.String(200))
     created = db.Column(db.DateTime())
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
@@ -244,7 +245,7 @@ def news_author_handler(requested):
     article_lists = get_article_list_for_display(articles)
     return render_template("news/author.html", article_lists = article_lists, est_date = get_presentable_date, author = user)
 
-def add_wiki(name, description, creator):
+def add_wiki(name, full, description, creator):
     if not restrict.check_if_valid_wiki_name(name):
         app.logger.error("Invalid wiki name.")
         return False
@@ -258,12 +259,22 @@ def add_wiki(name, description, creator):
     created = datetime.datetime.now()
     new_wiki = Wiki()
     new_wiki.name = name
+    new_wiki.full = full
     new_wiki.description = description
     new_wiki.created = created
     new_wiki.creator_id = creator.id
     db.session.add(new_wiki)
     db.session.commit()
     return True
+
+@app.route("/wikis/<requested>")
+@app.route("/wikis/<requested>/")
+def wiki_home_page_handler(requested):
+    wiki = Wiki.query.filter(Wiki.name == requested).first()
+    if wiki == None:
+        return "Wiki not found!"
+    creator = wiki.creator
+    return render_template("wiki.html", wiki = wiki, creator = creator)
 
 
 
