@@ -106,15 +106,15 @@ class SubDiff(db.Model):
     index = db.Column(db.Integer())
     content = db.Column(db.String(4096))
 
-user_manager = UserManager(app, db, User)
+user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
 
 @app.route("/")
-def home_page_view():
+def home_page_handler():
     return "Home Page, cool."
 
 @app.route("/users/<username>")
 @app.route("/users/<username>/")
-def user_page_view(username):
+def user_page_handler(username):
     requested_user = User.query.filter(User.username == username).first()
     if requested_user == None:
         return "User not found."

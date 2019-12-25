@@ -18,6 +18,7 @@ def config_app(app):
     app.config['USER_APP_NAME'] = 'Anaximander'
     app.config['USER_ENABLE_INVITATION'] = True
     app.config['USER_REQUIRE_INVITATION'] = True
+    app.config['USER_ENABLE_INVITE_USER'] = True
 
     app.config['USER_CHANGE_PASSWORD_URL'] = '/settings/change-password/'
     app.config['USER_ENABLE_CHANGE_USERNAME'] = True
@@ -31,8 +32,6 @@ def config_app(app):
     app.config['USER_RESEND_EMAIL_CONFIRMATION_URL'] = '/auth/resend-confirmation-email/'
     app.config['USER_RESET_PASSWORD_URL'] = '/auth/reset-password/<token>/'
     app.config['USER_PROFILE_URL'] = '/error'   # tbd...
-    app.config['USER_INVITE_URL'] = '/invite'   # might change
+    app.config['USER_INVITE_USER_URL'] = '/invite'   # might change
     app.config['USER_INVITE_ENDPOINT'] = 'user.login'
     app.config['USER_PROFILE_TEMPLATE'] = 'error.html'  # tbd...
-    app.config['USER_UNAUTHENTICATED_ENDPOINT'] = "home_page"
-    app.config['USER_UNAUTHORIZED_ENDPOINT'] = "home_page"
