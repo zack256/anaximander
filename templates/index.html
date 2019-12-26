@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block modals %}
+<div class = "modal mft" id = "addWikiModal">
+    <div class="modal-background" onclick = "deactivateModal('addWikiModal');"></div>
+    <div class="modal-card" style = "width : 80%;">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Create Wiki</p>
+            <button class="delete" aria-label="close" onclick = "deactivateModal('addWikiModal');"></button>
+        </header>
+        <section class="modal-card-body">
+            <script>var addWikiSubmitted = false;</script>
+            <form id = "addWikiForm" action = "/forms/add-wiki/" method = "POST" onsubmit = "if (addWikiSubmitted) { return false; } else { if (addWikiCheck()) { addWikiSubmitted = true; return true; } else { return false; } }"></form>
+            <table class = "table is-striped is-fullwidth">
+                <tbody>
+                    <tr>
+                        <td>Short Name</td>
+                        <td><input name = "name" type = "text" class = "input" maxlength = "80" pattern = "^[a-z0-9\-_]+$" required = "required" form = "addWikiForm" placeholder = 'Short Name, will show up in urls. e.g, "cats".'></td>
+                    </tr>
+                    <tr>
+                        <td>Full Name</td>
+                        <td><input name = "name" type = "text" class = "input" maxlength = "80" required = "required" form = "addWikiForm" placeholder = 'Full Name - e.g, "Cats: The Musical and its Derivatives; a Wiki.".'></td>
+                    </tr>
+                    <tr>
+                        <td>Description</td>
+                        <td><input name = "name" type = "text" class = "input" maxlength = "200" required = "required" form = "addWikiForm" placeholder = 'Wiki Description. e.g, "A wiki about Cats: The Musical, as well as its resounding cultural impact.".'></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <footer class="modal-card-foot">
+            <button class = "button is-success" type = "submit" form = "addWikiForm">Submit</button>
+            <button class = "button is-danger" type = "reset" form = "addWikiForm">Cancel</button>
+        </footer>
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<h3 class = "title is-3">Welcome to Anaximander!</h3>
+<h5 class = "subtitle is-5">An online platform to create collaborative and informative wikis.</h5>
+<p><a href = "/news/">News</a></p>
+<h5 class = "subtitle is-5">Wiki List</h5>
+{% for wiki in wikis %}
+<p><a href = "/wikis/{{ wiki.name }}/">{{ wiki.full }}</a> - {{ wiki.description }}.</p>
+{% endfor %}
+<button class = "button is-primary" onclick = "activateModal('addWikiModal');">Create Wiki</button>
+{% endblock %}

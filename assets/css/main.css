@@ -4,3 +4,9 @@ body {
 .subtitle {
     margin-bottom : 0 !important;
 }
+.topRightUserInfoH5 {
+    position : absolute !important;
+    top : 0 !important;
+    right : 0 !important;
+    margin : 1em !important;
+}

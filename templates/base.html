@@ -6,10 +6,23 @@
 		<title>{% block title %}Anaximander{% endblock %}</title>
 		<link rel = "stylesheet" href = "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css"/>
 		<link rel = "stylesheet" href = "/assets/css/main.css">
+		<link rel = "stylesheet" href = "/assets/css/modals.css">
 		{% block more_top %}{% endblock %}
 	</head>
 	<body>
+	    {% block user_info %}
+    	    <h5 class = "subtitle is-5 topRightUserInfoH5">
+    	    {% if current_user.is_authenticated %}
+    	        Logged in as {{ current_user.username }}. <a href = "/auth/logout/">Logout</a>
+    	    {% else %}
+    	        Not Logged in. <a href = "/auth/login/">Login</a>
+    	    {% endif %}
+    	    </h5>
+	    {% endblock %}
+	    {% block modals %}{% endblock %}
 		{% block content %}{% endblock %}
+		<script src = "/assets/js/modals.js"></script>
+		<script src = "/assets/js/checks.js"></script>
 		{% block more_bottom %}{% endblock %}
 	</body>
 </html>

@@ -77,6 +77,7 @@ class Wiki(db.Model):
     name = db.Column(db.String(80), nullable = False, unique = True)    # short name.
     full = db.Column(db.String(80), nullable = False, unique = True)    # long name.
     description = db.Column(db.String(200))
+    private = db.Column(db.Boolean)
     created = db.Column(db.DateTime())
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     articles = db.relationship("Article", backref = "wiki")
@@ -110,7 +111,8 @@ user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
 
 @app.route("/")
 def home_page_handler():
-    return "Home Page, cool."
+    #return "Home Page, cool."
+    return render_template("index.html", wikis = Wiki.query.all())
 
 @app.route("/users/<username>")
 @app.route("/users/<username>/")
@@ -223,6 +225,7 @@ def news_tag_handler(requested):
     author = user_dict[tag.author_id]
     article_lists = get_article_list_for_display(articles, user_dict)
     article_lists = sorted(article_lists, key = lambda x : x[1], reverse = True)
+    app.logger.error(["cu!", current_user, current_user.is_authenticated])
     return render_template("news/tag.html", article_lists = article_lists, tag = tag, author = author, est_date = get_presentable_date)
 
 @app.route("/news")
@@ -254,17 +257,19 @@ def add_wiki(name, full, description, creator):
         return False
     wiki_dir_path = config.paths.WIKIS_DIR + name
     if os.path.isdir(wiki_dir_path):
-        app.logger.error("Wiki still has a directory that possibly contains files.")
+        app.logger.error("Wiki already has a directory that possibly contains files.")
         return False
     created = datetime.datetime.now()
     new_wiki = Wiki()
     new_wiki.name = name
     new_wiki.full = full
     new_wiki.description = description
+    new_wiki.private = False
     new_wiki.created = created
     new_wiki.creator_id = creator.id
     db.session.add(new_wiki)
     db.session.commit()
+    os.mkdir(wiki_dir_path)
     return True
 
 @app.route("/wikis/<requested>")
