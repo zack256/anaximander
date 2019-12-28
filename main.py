@@ -32,7 +32,8 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary = 'user_roles', backref = db.backref('users', lazy='dynamic'))
     news = db.relationship("NewsArticle", backref = "author")
     news_tags = db.relationship("NewsTag", backref = "author")
-    wikis = db.relationship("Wiki", backref = "creator")
+    #wikis = db.relationship("Wiki", backref = "creator")
+    wikis = db.relationship("Member", backref = "user_m")
     articles = db.relationship("Article", backref = "creator")
     diffs = db.relationship("Diff", backref = "editor")
 
@@ -77,10 +78,20 @@ class Wiki(db.Model):
     name = db.Column(db.String(80), nullable = False, unique = True)    # short name.
     full = db.Column(db.String(80), nullable = False, unique = True)    # long name.
     description = db.Column(db.String(200))
-    private = db.Column(db.Boolean)
+    privacy = db.Column(db.Integer) # can be 0 (public), 1 (semi-public), or 2 (private).
     created = db.Column(db.DateTime())
-    creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    #creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    users = db.relationship("Member", backref = "wiki_m")
     articles = db.relationship("Article", backref = "wiki")
+
+class Member(db.Model):
+    __tablename__ = "members"
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    user_id = db.Column(db.Integer(), db.ForeignKey('user.id'), primary_key = True, autoincrement = False)
+    wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id'), primary_key = True, autoincrement = False)
+    clearance = db.Column(db.Integer()) # 0-4. more on that later.
+    user = db.relationship(User, backref = "wikis_m")
+    wiki = db.relationship(Wiki, backref = "users_m")
 
 class Article(db.Model):
     __tablename__ = "articles"
@@ -264,10 +275,13 @@ def add_wiki(name, full, description, creator):
     new_wiki.name = name
     new_wiki.full = full
     new_wiki.description = description
-    new_wiki.private = False
+    new_wiki.privacy = 0    # initially public.
     new_wiki.created = created
-    new_wiki.creator_id = creator.id
     db.session.add(new_wiki)
+    assc = Member(clearance = 4)
+    assc.user = creator
+    assc.wiki = new_wiki
+    db.session.add(assc)
     db.session.commit()
     os.mkdir(wiki_dir_path)
     return True
@@ -278,10 +292,13 @@ def wiki_home_page_handler(requested):
     wiki = Wiki.query.filter(Wiki.name == requested).first()
     if wiki == None:
         return "Wiki not found!"
-    creator = wiki.creator
+    creator = User.query.join(Member).join(Wiki).filter((Member.wiki_id == wiki.id) & (Member.clearance == 4)).first()
     return render_template("wiki.html", wiki = wiki, creator = creator)
 
-
+@app.route("/forms/add-wiki/", methods = ["POST"])
+@login_required
+def add_wiki_handler():
+    pass
 
 
 
