@@ -10,3 +10,6 @@ body {
     right : 0 !important;
     margin : 1em !important;
 }
+.wiki-text-box {
+    font-family : monospace;
+}

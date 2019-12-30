@@ -236,7 +236,6 @@ def news_tag_handler(requested):
     author = user_dict[tag.author_id]
     article_lists = get_article_list_for_display(articles, user_dict)
     article_lists = sorted(article_lists, key = lambda x : x[1], reverse = True)
-    app.logger.error(["cu!", current_user, current_user.is_authenticated])
     return render_template("news/tag.html", article_lists = article_lists, tag = tag, author = author, est_date = get_presentable_date)
 
 @app.route("/news")
@@ -293,12 +292,27 @@ def wiki_home_page_handler(requested):
     if wiki == None:
         return "Wiki not found!"
     creator = User.query.join(Member).join(Wiki).filter((Member.wiki_id == wiki.id) & (Member.clearance == 4)).first()
-    return render_template("wiki.html", wiki = wiki, creator = creator)
+    articles = wiki.articles
+    return render_template("wiki.html", wiki = wiki, creator = creator, articles = articles)
 
 @app.route("/forms/add-wiki/", methods = ["POST"])
 @login_required
 def add_wiki_handler():
-    pass
+    name = request.form["name"]
+    full = request.form["full"]
+    desc = request.form["desc"]
+    if not add_wiki(name, full, desc, current_user):
+        return "Something went wrong!"
+    return redirect("/wikis/{}/".format(name))
+
+@app.route("/wikis/<requested>/new/article")
+@app.route("/wikis/<requested>/new/article/")
+@login_required
+def add_article_pg_handler(requested):
+    wiki = Wiki.query.filter(Wiki.name == requested).first()
+    if wiki == None:
+        return "Wiki not found!"
+    return render_template("create_article.html", wiki = wiki)
 
 
 

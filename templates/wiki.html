@@ -5,5 +5,10 @@
 <h5 class = "subtitle is-5">{{ wiki.description }}</h5>
 <p>Created : {{ wiki.created }} by <a href = "/users/{{ creator.username }}/">{{ creator.username }}</a></p>
 <p>Short Name : {{ wiki.name }}</p>
+<p><a href = "/wikis/{{ wiki.name }}/new/article/">Create a New Article</a></p>
+<h5 class = "subtitle is-5">Article List</h5>
+{% for article in articles %}
+<p><a href = "/wikis/{{ wiki.name }}/articles/{{ article.name }}/">{{ article.name }}</a></p>
+{% endfor %}
 <h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
 {% endblock %}
