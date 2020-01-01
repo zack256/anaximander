@@ -87,8 +87,8 @@ class Wiki(db.Model):
 class Member(db.Model):
     __tablename__ = "members"
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
-    user_id = db.Column(db.Integer(), db.ForeignKey('user.id'), primary_key = True, autoincrement = False)
-    wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id'), primary_key = True, autoincrement = False)
+    user_id = db.Column(db.Integer(), db.ForeignKey('user.id'), primary_key = True, autoincrement = False)  # autoincrement is needed.
+    wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id'), primary_key = True, autoincrement = False) # " " "
     clearance = db.Column(db.Integer()) # 0-4. more on that later.
     user = db.relationship(User, backref = "wikis_m")
     wiki = db.relationship(Wiki, backref = "users_m")
@@ -108,6 +108,7 @@ class Diff(db.Model):
     created = db.Column(db.DateTime())
     editor_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     article_id = db.Column(db.Integer(), db.ForeignKey('articles.id', ondelete = 'CASCADE'))
+    convert_version_id = db.Column(db.Integer(), db.ForeignKey('wiki_convert_versions.id', ondelete = 'CASCADE'))
     sub_diffs = db.relationship("SubDiff", backref = "diff")
 
 class SubDiff(db.Model):
@@ -117,6 +118,13 @@ class SubDiff(db.Model):
     operation = db.Column(db.Boolean(), nullable = False)   # Subtraction (0) or Addition (1).
     index = db.Column(db.Integer())
     content = db.Column(db.String(4096))
+
+class WikiConvertVersion(db.Model):
+    __tablename__ = "wiki_convert_versions"
+    id = db.Column(db.Integer, primary_key = True)
+    released = db.Column(db.DateTime)
+    version = db.Column(db.Float)
+    diffs = db.relationship("Diff", backref = "convert_version")
 
 user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
 
@@ -258,6 +266,10 @@ def news_author_handler(requested):
     article_lists = get_article_list_for_display(articles)
     return render_template("news/author.html", article_lists = article_lists, est_date = get_presentable_date, author = user)
 
+def make_wiki_dirs(wiki_path):
+    os.mkdir(wiki_path)
+    os.mkdir(wiki_path + "/articles")
+
 def add_wiki(name, full, description, creator):
     if not restrict.check_if_valid_wiki_name(name):
         app.logger.error("Invalid wiki name.")
@@ -282,7 +294,8 @@ def add_wiki(name, full, description, creator):
     assc.wiki = new_wiki
     db.session.add(assc)
     db.session.commit()
-    os.mkdir(wiki_dir_path)
+    #os.mkdir(wiki_dir_path)
+    make_wiki_dirs(wiki_dir_path)
     return True
 
 @app.route("/wikis/<requested>")
@@ -314,6 +327,48 @@ def add_article_pg_handler(requested):
         return "Wiki not found!"
     return render_template("create_article.html", wiki = wiki)
 
+def user_clearance_level(user, wiki):
+    member = Member.query.filter((Member.wiki_id == wiki.id) & (Member.user_id == user.id)).first()
+    return member.clearance if member else -1
+
+def user_can_create_article(user, wiki):
+    clearance = user_clearance_level(user, wiki)
+    if wiki.privacy >= 1:
+        return clearance >= 2
+    return clearance != 0
+
+def create_article(wiki, name, body, creator):
+    if not user_can_create_article(creator, wiki):
+        return "Insufficient roles to create an article on this wiki."
+    if not restrict.check_if_valid_wiki_article_name(name):
+        return "Invalid article name."
+    already = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == name)).first()
+    if already:
+        return "Article already in database."
+    article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + name + ".txt"
+    if os.path.isdir(article_path):
+        return "Article not in database, but cannot be added as a file with the same name exists."
+    with open(article_path, "w") as file:
+        file.write(body)
+    created = datetime.datetime.now()
+    new_article = Article()
+    new_article.name = name
+    new_article.created = created
+    new_article.user_id = creator.id
+    new_article.wiki_id = wiki.id
+    db.session.add(new_article)
+    db.session.commit()
+    return redirect("/wikis/{}/articles/{}/".format(wiki.name, name))
+
+@app.route("/wikis/<requested>/forms/create-article/", methods = ["POST"])
+@login_required
+def create_article_handler(requested):
+    wiki = Wiki.query.filter(Wiki.name == requested).first()
+    if wiki == None:
+        return "Wiki not found!"
+    name = request.form["name"]
+    body = request.form["article"]
+    return create_article(wiki, name, body, current_user)
 
 
 
