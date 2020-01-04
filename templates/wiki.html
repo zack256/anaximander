@@ -8,7 +8,7 @@
 <p><a href = "/wikis/{{ wiki.name }}/new/article/">Create a New Article</a></p>
 <h5 class = "subtitle is-5">Article List</h5>
 {% for article in articles %}
-<p><a href = "/wikis/{{ wiki.name }}/articles/{{ article.name }}/">{{ article.name }}</a></p>
+<p><a href = "/wikis/{{ wiki.name }}/articles/{{ article.name }}/">{{ article.readable_name() }}</a></p>
 {% endfor %}
 <h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
 {% endblock %}

@@ -7,6 +7,7 @@ import os
 import datetime
 import constants
 import restrict
+import utils
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -97,10 +98,21 @@ class Article(db.Model):
     __tablename__ = "articles"
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(80), nullable = False)
+    protection = db.Column(db.Integer) # can be 0 (default) or 1, or 2 for public wikis. hafta elaborate on this.
     created = db.Column(db.DateTime())
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id', ondelete = 'CASCADE'))
+    convert_version_id = db.Column(db.Integer(), db.ForeignKey('wiki_convert_versions.id', ondelete = 'CASCADE'))
     diffs = db.relationship("Diff", backref = "article")
+
+    def readable_name(self):
+        n = ""
+        for i in self.name:
+            if i == "_":
+                n += " "
+            else:
+                n += i
+        return n
 
 class Diff(db.Model):
     __tablename__ = "diffs"
@@ -123,7 +135,9 @@ class WikiConvertVersion(db.Model):
     __tablename__ = "wiki_convert_versions"
     id = db.Column(db.Integer, primary_key = True)
     released = db.Column(db.DateTime)
-    version = db.Column(db.Float)
+    #version = db.Column(db.Float)
+    version = db.Column(db.String(30))  # "0.0.1"
+    articles = db.relationship("Article", backref = "convert_version")
     diffs = db.relationship("Diff", backref = "convert_version")
 
 user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
@@ -348,14 +362,17 @@ def create_article(wiki, name, body, creator):
     article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + name + ".txt"
     if os.path.isdir(article_path):
         return "Article not in database, but cannot be added as a file with the same name exists."
+    version = max(WikiConvertVersion.query.all(), key = lambda x : x.released)
     with open(article_path, "w") as file:
         file.write(body)
     created = datetime.datetime.now()
     new_article = Article()
     new_article.name = name
+    new_article.protection = 0
     new_article.created = created
-    new_article.user_id = creator.id
+    new_article.creator_id = creator.id
     new_article.wiki_id = wiki.id
+    new_article.convert_version_id = version.id
     db.session.add(new_article)
     db.session.commit()
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, name))
@@ -370,7 +387,18 @@ def create_article_handler(requested):
     body = request.form["article"]
     return create_article(wiki, name, body, current_user)
 
-
+def add_wiki_convert_version(change = 2):
+    versions = WikiConvertVersion.query.all()
+    if versions:
+        last = max(versions, key = lambda x : x.released)
+        version_name = utils.next_version(last.version, change)
+    else:
+        version_name = constants.FIRST_WIKI_CONVERT_VERSION
+    new = WikiConvertVersion()
+    new.version = version_name
+    new.released = datetime.datetime.now()
+    db.session.add(new)
+    db.session.commit()
 
 
 
