@@ -4,13 +4,14 @@
 <h3 class = "title is-3">Creating Article - {{ wiki.full }}</h3>
 <h5 class = "subtitle is-5">{{ wiki.description }}</h5>
 <br/>
+<form method = "POST" action = "/wikis/{{ wiki.name }}/forms/create-article/" id = "createArticleForm" onsubmit = "if (createArticleSubmitted) { return false; } else { if (createArticleCheck()) { createArticleSubmitted = true; return true; } else { return false; } }"></form>
 <p>Give your article a name. Keep in mind this will be used with URLs.</p>
-<input class = "input" type = "text" name = "name" maxlength = "80" pattern = "^([_]?[a-zA-Z0-9().,!~*'\-[\]{}])+$" id = "createArticleName" form = "createArticleForm">
+<input class = "input" type = "text" name = "name" maxlength = "80" pattern = "^([ ]?[a-zA-Z0-9().,!~*'\-[\]{}])+$" id = "createArticleName" form = "createArticleForm">
 <p>Write the article below. Click the "Preview" and "Changes" buttons to check your progress, and hit "Create" when you are finished.</p>
 <textarea class = "textarea wiki-text-box" placeholder = "Don't be shy, you got this!" rows = "12" name = "article" form = "createArticleForm"></textarea>
 <br/>
 <div class = "buttons">
-    <form method = "POST" action = "/wikis/{{ wiki.name }}/forms/create-article/" id = "createArticleForm" onsubmit = "if (addWikiSubmitted) { return false; } else { if (addWikiCheck()) { addWikiSubmitted = true; return true; } else { return false; } }"></form>
+    <script>var createArticleSubmitted = false;</script>
     <button class = "button is-success" type = "submit" form = "createArticleForm">Create</button>
     <button class = "button is-info">Preview</button>
     <button class = "button is-warning">Changes</button>

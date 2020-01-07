@@ -8,6 +8,7 @@ import datetime
 import constants
 import restrict
 import utils
+import wikify
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -354,6 +355,7 @@ def user_can_create_article(user, wiki):
 def create_article(wiki, name, body, creator):
     if not user_can_create_article(creator, wiki):
         return "Insufficient roles to create an article on this wiki."
+    name = name.replace(" ", "_")
     if not restrict.check_if_valid_wiki_article_name(name):
         return "Invalid article name."
     already = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == name)).first()
@@ -399,6 +401,30 @@ def add_wiki_convert_version(change = 2):
     new.released = datetime.datetime.now()
     db.session.add(new)
     db.session.commit()
+
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>")
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/")
+def article_page_handle(reqd_w, reqd_a):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    if article == None:
+        return "Article not found!"
+    diffs = article.diffs
+    if diffs:
+        latest_diff = max(diffs, key = lambda x : x.created)
+        latest_version_id = latest_diff.convert_version_id
+    else:
+        latest_version_id = article.convert_version_id
+    convert_version = WikiConvertVersion.query.get(latest_version_id)
+    article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + article.name + ".txt"
+    if not os.path.isfile(article_path):
+        return "Article not found in file system!"
+    with open(article_path) as fi:
+        text = fi.read()
+    html = wikify.wikify(text, convert_version.version)
+    return render_template("article.html", article = article, wiki = wiki, article_html = html)
 
 
 
