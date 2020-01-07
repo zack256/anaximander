@@ -103,7 +103,6 @@ class Article(db.Model):
     created = db.Column(db.DateTime())
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id', ondelete = 'CASCADE'))
-    convert_version_id = db.Column(db.Integer(), db.ForeignKey('wiki_convert_versions.id', ondelete = 'CASCADE'))
     diffs = db.relationship("Diff", backref = "article")
 
     def readable_name(self):
@@ -121,7 +120,6 @@ class Diff(db.Model):
     created = db.Column(db.DateTime())
     editor_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     article_id = db.Column(db.Integer(), db.ForeignKey('articles.id', ondelete = 'CASCADE'))
-    convert_version_id = db.Column(db.Integer(), db.ForeignKey('wiki_convert_versions.id', ondelete = 'CASCADE'))
     sub_diffs = db.relationship("SubDiff", backref = "diff")
 
 class SubDiff(db.Model):
@@ -131,15 +129,6 @@ class SubDiff(db.Model):
     operation = db.Column(db.Boolean(), nullable = False)   # Subtraction (0) or Addition (1).
     index = db.Column(db.Integer())
     content = db.Column(db.String(4096))
-
-class WikiConvertVersion(db.Model):
-    __tablename__ = "wiki_convert_versions"
-    id = db.Column(db.Integer, primary_key = True)
-    released = db.Column(db.DateTime)
-    #version = db.Column(db.Float)
-    version = db.Column(db.String(30))  # "0.0.1"
-    articles = db.relationship("Article", backref = "convert_version")
-    diffs = db.relationship("Diff", backref = "convert_version")
 
 user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
 
@@ -364,7 +353,6 @@ def create_article(wiki, name, body, creator):
     article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + name + ".txt"
     if os.path.isdir(article_path):
         return "Article not in database, but cannot be added as a file with the same name exists."
-    version = max(WikiConvertVersion.query.all(), key = lambda x : x.released)
     with open(article_path, "w") as file:
         file.write(body)
     created = datetime.datetime.now()
@@ -374,7 +362,6 @@ def create_article(wiki, name, body, creator):
     new_article.created = created
     new_article.creator_id = creator.id
     new_article.wiki_id = wiki.id
-    new_article.convert_version_id = version.id
     db.session.add(new_article)
     db.session.commit()
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, name))
@@ -389,19 +376,6 @@ def create_article_handler(requested):
     body = request.form["article"]
     return create_article(wiki, name, body, current_user)
 
-def add_wiki_convert_version(change = 2):
-    versions = WikiConvertVersion.query.all()
-    if versions:
-        last = max(versions, key = lambda x : x.released)
-        version_name = utils.next_version(last.version, change)
-    else:
-        version_name = constants.FIRST_WIKI_CONVERT_VERSION
-    new = WikiConvertVersion()
-    new.version = version_name
-    new.released = datetime.datetime.now()
-    db.session.add(new)
-    db.session.commit()
-
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>")
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/")
 def article_page_handle(reqd_w, reqd_a):
@@ -411,19 +385,12 @@ def article_page_handle(reqd_w, reqd_a):
     article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
     if article == None:
         return "Article not found!"
-    diffs = article.diffs
-    if diffs:
-        latest_diff = max(diffs, key = lambda x : x.created)
-        latest_version_id = latest_diff.convert_version_id
-    else:
-        latest_version_id = article.convert_version_id
-    convert_version = WikiConvertVersion.query.get(latest_version_id)
     article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + article.name + ".txt"
     if not os.path.isfile(article_path):
         return "Article not found in file system!"
     with open(article_path) as fi:
         text = fi.read()
-    html = wikify.wikify(text, convert_version.version)
+    html = wikify.wikify(text)
     return render_template("article.html", article = article, wiki = wiki, article_html = html)
 
 
