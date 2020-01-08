@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set a_n = article.readable_name() %}
+{% set a_n_title = "Editing Article - " + a_n %}
+{% block title %}{{ a_n_title }}{% endblock %}
+{% block content %}
+<h3 class = "title is-3">{{ a_n_title }}</h3>
+<h5 class = "subtitle is-5">{{ wiki.full }} | <a href = "/wikis/{{ wiki.name }}">Wiki Home</a></h5>
+<br/>
+<form method = "POST" action = "/wikis/{{ wiki.name }}/forms/edit-article/{{ article.name }}/" id = "editArticleForm" onsubmit = "if (editArticleSubmitted) { return false; } else { if (editArticleCheck()) { editArticleSubmitted = true; return true; } else { return false; } }"></form>
+<p>Edit the article below. Click the "Preview" and "Changes" buttons to check your progress, and hit "Edit" when you are finished.</p>
+<textarea class = "textarea wiki-text-box" rows = "12" name = "article" form = "editArticleForm">{{ article_text }}</textarea>
+<br/>
+<div class = "buttons">
+    <script>var editArticleSubmitted = false;</script>
+    <button class = "button is-success" type = "submit" form = "editArticleForm">Edit</button>
+    <button class = "button is-info">Preview</button>
+    <button class = "button is-warning">Changes</button>
+</div>
+<h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
+{% endblock %}

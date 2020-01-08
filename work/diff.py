@@ -1,4 +1,4 @@
-import lcs
+import work.lcs as lcs
 
 lcs_func = lcs.get_lcs
 

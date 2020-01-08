@@ -9,6 +9,7 @@ import constants
 import restrict
 import utils
 import wikify
+import work.diff
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -341,6 +342,9 @@ def user_can_create_article(user, wiki):
         return clearance >= 2
     return clearance != 0
 
+def user_can_edit_article(user, wiki):
+    return user_can_create_article(user, wiki)  # for now.
+
 def create_article(wiki, name, body, creator):
     if not user_can_create_article(creator, wiki):
         return "Insufficient roles to create an article on this wiki."
@@ -350,9 +354,10 @@ def create_article(wiki, name, body, creator):
     already = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == name)).first()
     if already:
         return "Article already in database."
-    article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + name + ".txt"
-    if os.path.isdir(article_path):
+    article_path = get_article_path(wiki.name, name)
+    if os.path.isfile(article_path):
         return "Article not in database, but cannot be added as a file with the same name exists."
+    #app.logger.error([article_path, body])
     with open(article_path, "w") as file:
         file.write(body)
     created = datetime.datetime.now()
@@ -385,16 +390,71 @@ def article_page_handle(reqd_w, reqd_a):
     article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
     if article == None:
         return "Article not found!"
-    article_path = config.paths.WIKIS_DIR + wiki.name + "/articles/" + article.name + ".txt"
-    if not os.path.isfile(article_path):
+    article_path = article_in_files(wiki.name, article.name)
+    if not article_path:
         return "Article not found in file system!"
     with open(article_path) as fi:
         text = fi.read()
-    html = wikify.wikify(text)
-    return render_template("article.html", article = article, wiki = wiki, article_html = html)
+    edit_param = request.args.get("edit", "", str)
+    if edit_param == "1":
+        return render_template("edit_article.html", article = article, wiki = wiki, article_text = text)
+    else:
+        html = wikify.wikify(text)
+        return render_template("article.html", article = article, wiki = wiki, article_html = html)
 
+def get_article_path(wiki_name, article_name):
+    return config.paths.WIKIS_DIR + wiki_name + "/articles/" + article_name + ".txt"
 
+def article_in_files(wiki_name, article_name):
+    article_path = get_article_path(wiki_name, article_name)
+    if os.path.isfile(article_path):
+        return article_path
+    return False
 
+@app.route("/wikis/<reqd_w>/forms/edit-article/<reqd_a>/", methods = ["POST"])
+@login_required
+def edit_article_handler(reqd_w, reqd_a):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    if article == None:
+        return "Article not found!"
+    if not article_in_files(wiki.name, article.name):
+        return "Article not found in file system!"
+    body = request.form["article"]
+    return edit_article(wiki, article, body, current_user)
+
+def add_sub_diff(o, i, c, d):
+    sub_diff = SubDiff()
+    sub_diff.operation = o
+    sub_diff.index = i
+    sub_diff.content = c
+    sub_diff.diff_id = d.id
+    db.session.add(sub_diff)
+
+def edit_article(wiki, article, body, editor):
+    if not user_can_edit_article(editor, wiki):
+        return "Insufficient roles to edit this article."
+    article_path = get_article_path(wiki.name, article.name)
+    with open(article_path) as file:
+        original = file.read()
+    subtractions, additions = work.diff.get_diff(original, body)
+    diff = Diff()
+    diff.editor_id = editor.id
+    diff.article_id = article.id
+    db.session.add(diff)
+    db.session.commit() # needed for diff to have an id.
+    for subtraction in subtractions:
+        add_sub_diff(0, subtraction[0], subtraction[1], diff)
+    for addition in additions:
+        add_sub_diff(1, addition[0], addition[1], diff)
+        app.logger.error([0, subtraction[0], subtraction[1], diff, diff.id, "peacena pean"])
+    diff.created = datetime.datetime.now()
+    db.session.commit()
+    with open(article_path, "w") as file2:
+        file2.write(body)
+    return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 
 
