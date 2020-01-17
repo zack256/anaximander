@@ -8,7 +8,7 @@
 <br/>
 <form method = "POST" action = "/wikis/{{ wiki.name }}/forms/edit-article/{{ article.name }}/" id = "editArticleForm" onsubmit = "if (editArticleSubmitted) { return false; } else { if (editArticleCheck()) { editArticleSubmitted = true; return true; } else { return false; } }"></form>
 <p>Edit the article below. Click the "Preview" and "Changes" buttons to check your progress, and hit "Edit" when you are finished.</p>
-<textarea class = "textarea wiki-text-box" rows = "12" name = "article" form = "editArticleForm">{{ article_text }}</textarea>
+<textarea class = "textarea wiki-text-box" rows = "24" name = "article" form = "editArticleForm">{{ article_text }}</textarea>
 <br/>
 <div class = "buttons">
     <script>var editArticleSubmitted = false;</script>

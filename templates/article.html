@@ -3,7 +3,7 @@
 {% block title %}{{ a_n }} - Anaximander{% endblock %}
 {% block content %}
 <h3 class = "title is-3">{{ a_n }}</h3>
-<h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "/wikis/{{ wiki.name }}/">Wiki Home</a> | <a href = "/wikis/{{ wiki.name }}/articles/{{ article.name }}/?edit=1">Edit Article</a></h5>
+<h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "/wikis/{{ wiki.name }}/">Wiki Home</a> | <a href = "/wikis/{{ wiki.name }}/articles/{{ article.name }}/edit/">Edit Article</a></h5>
 <br/>
 {{ article_html|safe }}
 <br/>

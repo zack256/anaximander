@@ -358,6 +358,8 @@ def create_article(wiki, name, body, creator):
     if os.path.isfile(article_path):
         return "Article not in database, but cannot be added as a file with the same name exists."
     #app.logger.error([article_path, body])
+    #body = body.replace("\r", "\n")
+    body = body.replace("\r", "")
     with open(article_path, "w") as file:
         file.write(body)
     created = datetime.datetime.now()
@@ -395,12 +397,25 @@ def article_page_handle(reqd_w, reqd_a):
         return "Article not found in file system!"
     with open(article_path) as fi:
         text = fi.read()
-    edit_param = request.args.get("edit", "", str)
-    if edit_param == "1":
-        return render_template("edit_article.html", article = article, wiki = wiki, article_text = text)
-    else:
-        html = wikify.wikify(text)
-        return render_template("article.html", article = article, wiki = wiki, article_html = html)
+    html = wikify.wikify(text, wiki)
+    return render_template("article.html", article = article, wiki = wiki, article_html = html)
+
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit")
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit/")
+@login_required
+def article_edit_page_handle(reqd_w, reqd_a):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    if article == None:
+        return "Article not found!"
+    article_path = article_in_files(wiki.name, article.name)
+    if not article_path:
+        return "Article not found in file system!"
+    with open(article_path) as fi:
+        text = fi.read()
+    return render_template("edit_article.html", article = article, wiki = wiki, article_text = text)
 
 def get_article_path(wiki_name, article_name):
     return config.paths.WIKIS_DIR + wiki_name + "/articles/" + article_name + ".txt"
@@ -413,7 +428,7 @@ def article_in_files(wiki_name, article_name):
 
 @app.route("/wikis/<reqd_w>/forms/edit-article/<reqd_a>/", methods = ["POST"])
 @login_required
-def edit_article_handler(reqd_w, reqd_a):
+def edit_article_form_handler(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
     if wiki == None:
         return "Wiki not found!"
@@ -439,6 +454,10 @@ def edit_article(wiki, article, body, editor):
     article_path = get_article_path(wiki.name, article.name)
     with open(article_path) as file:
         original = file.read()
+    app.logger.error(body)
+    #body = body.replace("\r", "\n")
+    body = body.replace("\r", "")
+    app.logger.error(body)
     subtractions, additions = work.diff.get_diff(original, body)
     diff = Diff()
     diff.editor_id = editor.id
@@ -447,9 +466,10 @@ def edit_article(wiki, article, body, editor):
     db.session.commit() # needed for diff to have an id.
     for subtraction in subtractions:
         add_sub_diff(0, subtraction[0], subtraction[1], diff)
+        app.logger.error([0, subtraction[0], subtraction[1], diff, diff.id, "peacena pean"])
     for addition in additions:
         add_sub_diff(1, addition[0], addition[1], diff)
-        app.logger.error([0, subtraction[0], subtraction[1], diff, diff.id, "peacena pean"])
+        app.logger.error([0, addition[0], addition[1], diff, diff.id, "peacena pean"])
     diff.created = datetime.datetime.now()
     db.session.commit()
     with open(article_path, "w") as file2:
