@@ -397,7 +397,8 @@ def article_page_handle(reqd_w, reqd_a):
         return "Article not found in file system!"
     with open(article_path) as fi:
         text = fi.read()
-    html = wikify.wikify(text, wiki)
+    #html = wikify.wikify(text, wiki)
+    html = wikify.simple_wikify(text, wiki)
     return render_template("article.html", article = article, wiki = wiki, article_html = html)
 
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit")
@@ -454,10 +455,7 @@ def edit_article(wiki, article, body, editor):
     article_path = get_article_path(wiki.name, article.name)
     with open(article_path) as file:
         original = file.read()
-    app.logger.error(body)
-    #body = body.replace("\r", "\n")
     body = body.replace("\r", "")
-    app.logger.error(body)
     subtractions, additions = work.diff.get_diff(original, body)
     diff = Diff()
     diff.editor_id = editor.id
@@ -466,10 +464,8 @@ def edit_article(wiki, article, body, editor):
     db.session.commit() # needed for diff to have an id.
     for subtraction in subtractions:
         add_sub_diff(0, subtraction[0], subtraction[1], diff)
-        app.logger.error([0, subtraction[0], subtraction[1], diff, diff.id, "peacena pean"])
     for addition in additions:
         add_sub_diff(1, addition[0], addition[1], diff)
-        app.logger.error([0, addition[0], addition[1], diff, diff.id, "peacena pean"])
     diff.created = datetime.datetime.now()
     db.session.commit()
     with open(article_path, "w") as file2:
