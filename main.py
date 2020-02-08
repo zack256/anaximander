@@ -5,11 +5,11 @@ import config.config as config_app
 import config.paths
 import os
 import datetime
-import constants
 import restrict
 import utils
 import wikify
 import work.diff
+import config.constants as cons
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -257,10 +257,11 @@ def news_page_handler():
     articles = NewsArticle.query.all()
     users = User.query.all()
     articles = sorted(articles, key = lambda x : x.created, reverse = True)
-    articles = articles[:constants.NEWS_PAGE_HOME_MAX_ARTICLES_DISPLAYED]
+    articles = articles[:cons.NEWS_PAGE_HOME_MAX_ARTICLES_DISPLAYED]
     user_dict = get_user_dict(users)
     article_lists = get_article_list_for_display(articles, user_dict)
-    return render_template("news/home.html", article_lists = article_lists, est_date = get_presentable_date)
+    is_editor = user_has_role(current_user, cons.NEWS_EDITOR_ROLE_NAME)
+    return render_template("news/home.html", article_lists = article_lists, est_date = get_presentable_date, is_editor = is_editor)
 
 @app.route("/news/authors/<requested>")
 @app.route("/news/authors/<requested>/")
@@ -472,7 +473,23 @@ def edit_article(wiki, article, body, editor):
         file2.write(body)
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
+def make_news_author_role():
+    author_role = Role(name = cons.NEWS_EDITOR_ROLE_NAME)
+    db.session.add(author_role)
+    db.session.commit()
 
+@app.route("/news/editor")
+@app.route("/news/editor/")
+@roles_required(cons.NEWS_EDITOR_ROLE_NAME)
+def news_editor_pg_handle():
+    return render_template("news/editor.html")
 
+@app.route("/unauthorized")
+@app.route("/unauthorized/")
+def unauthorized_handle():
+    return "You are unauthorized to view that page!"
+
+def user_has_role(user, role):
+    return role in [i.name for i in user.roles]
 
 

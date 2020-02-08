@@ -35,3 +35,4 @@ def config_app(app):
     app.config['USER_INVITE_USER_URL'] = '/invite'   # might change
     app.config['USER_INVITE_ENDPOINT'] = 'user.login'
     app.config['USER_PROFILE_TEMPLATE'] = 'error.html'  # tbd...
+    app.config['USER_UNAUTHORIZED_ENDPOINT'] = 'unauthorized_handle'

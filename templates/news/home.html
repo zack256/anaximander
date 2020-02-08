@@ -9,5 +9,5 @@
 <p>Written {{ est_date(article_list[1]) }} by <a href = "/news/authors/{{ article_list[3].username }}/">{{ article_list[3].username }}</a>.</p>
 <br/>
 {% endfor %}
-<h5 class = "subtitle is-5"><a href = "/">Home</a></h5>
+<h5 class = "subtitle is-5"><a href = "/">Home</a>{% if is_editor %} | <a href = "/news/editor/">Editor</a>{% endif %}</h5>
 {% endblock %}
