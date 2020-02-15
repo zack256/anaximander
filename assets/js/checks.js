@@ -25,3 +25,7 @@ function createArticleCheck () {
 function editArticleCheck () {
     return baseFinalCheck("Are you sure you want to edit this article?");
 }
+
+function createNewsArticleCheck () {
+    return baseFinalCheck("Are you sure you want to create this news article?");
+}

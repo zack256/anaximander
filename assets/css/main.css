@@ -13,3 +13,6 @@ body {
 .wiki-text-box {
     font-family : monospace;
 }
+.fs09rem {
+    font-size : 0.9rem !important;
+}

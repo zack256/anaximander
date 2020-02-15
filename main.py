@@ -10,6 +10,7 @@ import utils
 import wikify
 import work.diff
 import config.constants as cons
+import string
 
 app = Flask(__name__)
 config_app.config_app(app)
@@ -160,22 +161,6 @@ def make_initial_user(username, password, email):
 
 def get_est_date():
     return datetime.datetime.now() - datetime.timedelta(hours = 4)
-
-def add_article_to_db(article_name, author):
-    # adds article in file sys to db.
-    if not restrict.check_if_valid_news_article_name(article_name):
-        app.logger.error("Invalid article name.")
-        return False
-    if not os.path.isfile(config.paths.NEWS_ARTICLES_DIR + article_name + ".txt"):
-        app.logger.error("File path does not exist.")
-        return False
-    new_article = NewsArticle()
-    new_article.name = article_name
-    new_article.created = datetime.datetime.now()   # stored in db as utc.
-    new_article.author_id = author.id
-    db.session.add(new_article)
-    db.session.commit()
-    return True
 
 def add_news_tag_to_db(name, description, author):
     if not restrict.check_if_valid_news_tag_name(name):
@@ -484,12 +469,52 @@ def make_news_author_role():
 def news_editor_pg_handle():
     return render_template("news/editor.html")
 
+@app.route("/news/editor/create-article")
+@app.route("/news/editor/create-article/")
+@roles_required(cons.NEWS_EDITOR_ROLE_NAME)
+def news_editor_new_article_pg_handle():
+    return render_template("news/editor_new_article.html")
+
 @app.route("/unauthorized")
 @app.route("/unauthorized/")
 def unauthorized_handle():
     return "You are unauthorized to view that page!"
 
 def user_has_role(user, role):
+    if not user.is_authenticated:
+        return False
     return role in [i.name for i in user.roles]
 
+def url_for_article_name(name):
+    s = ""
+    for i in name:
+        if i == " ":
+            s += "-"
+        elif i in string.ascii_letters or i in string.digits:
+            s += i.lower()
+    return s
+
+@app.route("/news/forms/create-article/", methods = ["POST"])
+@roles_required(cons.NEWS_EDITOR_ROLE_NAME)
+def create_news_article_handler():
+    name = request.form["name"].strip()
+    body = request.form["article"]
+    url_name = url_for_article_name(name)
+    if not restrict.check_if_valid_news_article_name(url_name):
+        return "Article name failed validation tests!"
+    if NewsArticle.query.filter(NewsArticle.name == url_name).first() != None:
+        return "Article already exists in database!"
+    path = config.paths.NEWS_ARTICLES_DIR + url_name + ".txt"
+    if os.path.isfile(path):
+        return "Article already exists in file system (but not database)!"
+    with open(path, "w") as fi:
+        fi.write(name + "\n\n")
+        fi.write(body)
+    new_article = NewsArticle()
+    new_article.name = url_name
+    new_article.created = datetime.datetime.now()
+    new_article.author_id = current_user.id
+    db.session.add(new_article)
+    db.session.commit()
+    return redirect("/news/articles/{}/".format(url_name))
 

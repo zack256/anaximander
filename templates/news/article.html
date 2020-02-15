@@ -11,6 +11,9 @@
     <span class="tag is-info news-tag"><a href = "/news/tags/{{ tag.name }}/">{{ tag.name }}</a></span>
     {% endfor %}
 </div>
+{% else %}
+<p class = "fs09rem is-italic">This article isn't tagged with anything yet... :(</p>
+<br/>
 {% endif %}
 {% for paragraph in paragraphs %}
 <p>{{ paragraph }}</p>
