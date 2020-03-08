@@ -475,6 +475,14 @@ def news_editor_pg_handle():
 def news_editor_new_article_pg_handle():
     return render_template("news/editor_new_article.html")
 
+@app.route("/news/editor/tags")
+@app.route("/news/editor/tags/")
+@roles_required(cons.NEWS_EDITOR_ROLE_NAME)
+def news_editor_tags_pg_handle():
+    tags = NewsTag.query.all()
+    users_dict = {t.author_id : t.author for t in tags}
+    return render_template("news/tag_editor.html", tags = tags, users_dict = users_dict)
+
 @app.route("/unauthorized")
 @app.route("/unauthorized/")
 def unauthorized_handle():
