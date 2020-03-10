@@ -39,8 +39,21 @@
 <h5 class = "subtitle is-5">An online platform to create collaborative and informative wikis.</h5>
 <p><a href = "/news/">News</a></p>
 <h5 class = "subtitle is-5">Wiki List</h5>
-{% for wiki in wikis %}
-<p><a href = "/wikis/{{ wiki.name }}/">{{ wiki.full }}</a> - {{ wiki.description }}.</p>
-{% endfor %}
+<table class = "table is-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for wiki in wikis %}
+        <tr>
+            <td><a href = "/wikis/{{ wiki.name }}/">{{ wiki.full }}</a></td>
+            <td>{{ wiki.description }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 <button class = "button is-primary" onclick = "activateModal('addWikiModal');">Create Wiki</button>
 {% endblock %}

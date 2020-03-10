@@ -526,3 +526,15 @@ def create_news_article_handler():
     db.session.commit()
     return redirect("/news/articles/{}/".format(url_name))
 
+@app.route("/news/forms/edit-tag/", methods = ["POST"])
+@roles_required(cons.NEWS_EDITOR_ROLE_NAME)
+def edit_news_tag_handle():
+    t_id = int(request.form["t_id"])
+    desc = request.form["desc"]
+    news_tag = NewsTag.query.get(t_id)
+    if news_tag == None:
+        return "Invalid tag ID."
+    news_tag.description = desc
+    db.session.commit()
+    return redirect("/news/editor/tags/")
+

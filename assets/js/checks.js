@@ -29,3 +29,7 @@ function editArticleCheck () {
 function createNewsArticleCheck () {
     return baseFinalCheck("Are you sure you want to create this news article?");
 }
+
+function editTagCheck () {
+    return baseFinalCheck("Are you sure you want to edit this news tag?");
+}
