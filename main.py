@@ -102,8 +102,8 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(80), nullable = False)
     protection = db.Column(db.Integer) # can be 0 (default) or 1, or 2 for public wikis. hafta elaborate on this.
-    created = db.Column(db.DateTime())
-    creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    created = db.Column(db.DateTime())  # unnecessary, can look at first diff to see this.
+    creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))    # same as above.
     wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id', ondelete = 'CASCADE'))
     diffs = db.relationship("Diff", backref = "article")
 
@@ -120,6 +120,7 @@ class Diff(db.Model):
     __tablename__ = "diffs"
     id = db.Column(db.Integer, primary_key = True)
     created = db.Column(db.DateTime())
+    action = db.Column(db.Integer)  # Regular edit (0), Initial Diff (1), Name Change (2), Protection Change (3), more to come?
     editor_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     article_id = db.Column(db.Integer(), db.ForeignKey('articles.id', ondelete = 'CASCADE'))
     sub_diffs = db.relationship("SubDiff", backref = "diff")
@@ -280,7 +281,7 @@ def add_wiki(name, full, description, creator):
     new_wiki.privacy = 0    # initially public.
     new_wiki.created = created
     db.session.add(new_wiki)
-    assc = Member(clearance = 4)
+    assc = Member(clearance = 4)    # 4 = creator of wiki (founder)
     assc.user = creator
     assc.wiki = new_wiki
     db.session.add(assc)
@@ -343,8 +344,6 @@ def create_article(wiki, name, body, creator):
     article_path = get_article_path(wiki.name, name)
     if os.path.isfile(article_path):
         return "Article not in database, but cannot be added as a file with the same name exists."
-    #app.logger.error([article_path, body])
-    #body = body.replace("\r", "\n")
     body = body.replace("\r", "")
     with open(article_path, "w") as file:
         file.write(body)
@@ -356,6 +355,20 @@ def create_article(wiki, name, body, creator):
     new_article.creator_id = creator.id
     new_article.wiki_id = wiki.id
     db.session.add(new_article)
+    db.session.commit()
+    initial_diff = Diff()
+    initial_diff.action = 1
+    initial_diff.created = created
+    initial_diff.editor_id = creator.id
+    initial_diff.article_id = new_article.id
+    db.session.add(initial_diff)
+    db.session.commit()
+    initial_subdiff = SubDiff()
+    initial_subdiff.diff_id = initial_diff.id
+    initial_subdiff.operation = 1
+    initial_subdiff.index = 0
+    initial_subdiff.content = body
+    db.session.add(initial_subdiff)
     db.session.commit()
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, name))
 
@@ -425,7 +438,8 @@ def edit_article_form_handler(reqd_w, reqd_a):
     if not article_in_files(wiki.name, article.name):
         return "Article not found in file system!"
     body = request.form["article"]
-    return edit_article(wiki, article, body, current_user)
+    edit_article(wiki, article, body, current_user)
+    return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 def add_sub_diff(o, i, c, d):
     sub_diff = SubDiff()
@@ -446,6 +460,7 @@ def edit_article(wiki, article, body, editor):
     diff = Diff()
     diff.editor_id = editor.id
     diff.article_id = article.id
+    diff.action = 0
     db.session.add(diff)
     db.session.commit() # needed for diff to have an id.
     for subtraction in subtractions:
@@ -456,7 +471,6 @@ def edit_article(wiki, article, body, editor):
     db.session.commit()
     with open(article_path, "w") as file2:
         file2.write(body)
-    return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 def make_news_author_role():
     author_role = Role(name = cons.NEWS_EDITOR_ROLE_NAME)

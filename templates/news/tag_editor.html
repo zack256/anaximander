@@ -49,6 +49,7 @@
             <th>Description</th>
             <th>Created</th>
             <th>Edit</th>
+            <th>Delete</th>
         </tr>
     </thead>
     <tbody>
@@ -59,6 +60,7 @@
             <td>{{ tag.description }}</td>
             <td>{{ tag.created }} by <a href = "/users/{{ author.username }}/">{{ author.username }}</a></td>
             <td><button class = "button is-primary" onclick = "updateEditTagModal('{{ tag.id }}', tagObj); activateModal('editTag');">Edit</button></td>
+            <td><button class = "button is-danger">Delete</button></td>
         </tr>
         {% endfor %}
     </tbody>
