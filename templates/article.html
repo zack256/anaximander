@@ -2,8 +2,10 @@
 {% set a_n = article.readable_name() %}{# important, set it outside blocks bc cant use it outside of one block. #}
 {% block title %}{{ a_n }} - Anaximander{% endblock %}
 {% block content %}
+{% set home_url = "/wikis/" + wiki.name %}
+{% set article_url = home_url + "/articles/" + article.name %}
 <h3 class = "title is-3">{{ a_n }}</h3>
-<h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "/wikis/{{ wiki.name }}/">Wiki Home</a> | <a href = "/wikis/{{ wiki.name }}/articles/{{ article.name }}/edit/">Edit Article</a></h5>
+<h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "{{ home_url }}/">Wiki Home</a> | <a href = "{{ article_url }}/edit/">Edit Article</a> | <a href = "{{ article_url }}/history/">View History</a></h5>
 <br/>
 {{ article_html|safe }}
 <br/>

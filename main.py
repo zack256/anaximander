@@ -293,7 +293,7 @@ def wiki_home_page_handler(requested):
     if wiki == None:
         return "Wiki not found!"
     creator = User.query.join(Member).join(Wiki).filter((Member.wiki_id == wiki.id) & (Member.clearance == 4)).first()
-    articles = wiki.articles
+    articles = sorted(wiki.articles, key = lambda x : x.name)
     return render_template("wiki.html", wiki = wiki, creator = creator, articles = articles)
 
 @app.route("/forms/add-wiki/", methods = ["POST"])
@@ -327,6 +327,9 @@ def user_can_create_article(user, wiki):
 
 def user_can_edit_article(user, wiki):
     return user_can_create_article(user, wiki)  # for now.
+
+def user_can_read_article(user, wiki):
+    return True # later.
 
 def create_article(wiki, name, body, creator):
     if not user_can_create_article(creator, wiki):
@@ -406,6 +409,8 @@ def article_edit_page_handle(reqd_w, reqd_a):
     article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
     if article == None:
         return "Article not found!"
+    if not user_can_edit_article(current_user, wiki):
+        return "Insufficient roles to edit this article."
     article_path = article_in_files(wiki.name, article.name)
     if not article_path:
         return "Article not found in file system!"
@@ -547,4 +552,23 @@ def edit_news_tag_handle():
     news_tag.description = desc
     db.session.commit()
     return redirect("/news/editor/tags/")
+
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/history")
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/history/")
+def article_history_page_handle(reqd_w, reqd_a):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    if article == None:
+        return "Article not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
+    diffs = Diff.query.filter(Diff.article_id == article.id).order_by(Diff.created.desc()).limit(50).all()
+    diff_dict = {dif.id : [0, 0] for dif in diffs}
+    subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).all()
+    for subdiff in subdiffs:
+        diff_dict[subdiff.diff_id][subdiff.operation] += len(subdiff.content)
+    return render_template("article_history.html", wiki = wiki, article = article, diffs = diffs, diff_dict = diff_dict)
+
 

@@ -16,3 +16,12 @@ body {
 .fs09rem {
     font-size : 0.9rem !important;
 }
+.rTxt {
+    color : red;
+}
+.gTxt {
+    color : green;
+}
+.bTxt {
+    color : blue;
+}
