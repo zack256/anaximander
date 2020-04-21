@@ -1,7 +1,5 @@
-from flask import Flask, render_template, redirect, request, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
+from flask import render_template, redirect, request, send_from_directory
 from flask_user import current_user, login_required, UserManager, UserMixin, SQLAlchemyAdapter, roles_required
-import config.config as config_app
 import config.paths
 import os
 import datetime
@@ -11,10 +9,9 @@ import wikify
 import work.diff
 import config.constants as cons
 import string
+import start_db
 
-app = Flask(__name__)
-config_app.config_app(app)
-db = SQLAlchemy(app)
+app, db = start_db.app, start_db.db
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
@@ -36,7 +33,6 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary = 'user_roles', backref = db.backref('users', lazy='dynamic'))
     news = db.relationship("NewsArticle", backref = "author")
     news_tags = db.relationship("NewsTag", backref = "author")
-    #wikis = db.relationship("Wiki", backref = "creator")
     wikis = db.relationship("Member", backref = "user_m")
     articles = db.relationship("Article", backref = "creator")
     diffs = db.relationship("Diff", backref = "editor")
