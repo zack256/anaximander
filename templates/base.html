@@ -13,7 +13,7 @@
 	    {% block user_info %}
     	    <h5 class = "subtitle is-5 topRightUserInfoH5">
     	    {% if current_user.is_authenticated %}
-    	        Logged in as <a href = "/users/{{ current_user.username }}">{{ current_user.username }}</a>. <a href = "/auth/logout/">Logout</a>
+    	        Logged in as <a href = "/users/{{ current_user.username }}/">{{ current_user.username }}</a>. <a href = "/auth/logout/">Logout</a>
     	    {% else %}
     	        Not Logged in. <a href = "/auth/login/">Login</a>
     	    {% endif %}

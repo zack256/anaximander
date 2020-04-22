@@ -27,6 +27,7 @@ class User(db.Model, UserMixin):
     last_name = db.Column(db.String(100), nullable = False, server_default = '')
     avatar = db.Column(db.String(50), nullable = False, server_default = '')
 
+    registered = db.Column(db.DateTime())
     seen = db.Column(db.DateTime())
 
     # Relationships
@@ -36,6 +37,9 @@ class User(db.Model, UserMixin):
     wikis = db.relationship("Member", backref = "user_m")
     articles = db.relationship("Article", backref = "creator")
     diffs = db.relationship("Diff", backref = "editor")
+
+    def set_registered_datetime(self):
+        self.registered = datetime.datetime.now()   # have to modify some flask-user stuff for this.
 
 class Role(db.Model):
     id = db.Column(db.Integer(), primary_key = True)
@@ -52,6 +56,8 @@ class UserInvitation(db.Model):
     email = db.Column(db.String(255), nullable = False)
     invited_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     token = db.Column(db.String(100), nullable = False, server_default = '')
+
+user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
 
 article_tags = db.Table("article_tags", db.Column("article_id", db.Integer, db.ForeignKey("news.id")), db.Column("tag_id", db.Integer, db.ForeignKey("newstags.id")))
 
@@ -129,8 +135,6 @@ class SubDiff(db.Model):
     index = db.Column(db.Integer())
     content = db.Column(db.String(4096))
 
-user_manager = UserManager(app, db, User, UserInvitationClass = UserInvitation)
-
 @app.route("/")
 def home_page_handler():
     #return "Home Page, cool."
@@ -142,7 +146,7 @@ def user_page_handler(username):
     requested_user = User.query.filter(User.username == username).first()
     if requested_user == None:
         return "User not found."
-    return requested_user.username + " has been a member since " + str(requested_user.email_confirmed_at) + "."
+    return requested_user.username + " has been a member since " + str(requested_user.registered) + "."
 
 def make_initial_user(username, password, email):
     users = User.query.all()
@@ -565,10 +569,15 @@ def article_history_page_handle(reqd_w, reqd_a):
     if not user_can_read_article(current_user, wiki):
         return "Insufficient roles to read this article."
     diffs = Diff.query.filter(Diff.article_id == article.id).order_by(Diff.created.desc()).limit(50).all()
-    diff_dict = {dif.id : [0, 0] for dif in diffs}
+    diff_dict = {}; editor_set = set()
+    for dif in diffs:
+        diff_dict[dif.id] = [0, 0]
+        editor_set.add(dif.editor_id)
     subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).all()
+    editors = User.query.filter(User.id.in_(editor_set)).all()
     for subdiff in subdiffs:
         diff_dict[subdiff.diff_id][subdiff.operation] += len(subdiff.content)
-    return render_template("article_history.html", wiki = wiki, article = article, diffs = diffs, diff_dict = diff_dict)
+    editor_dict = {ed.id : ed for ed in editors}
+    return render_template("article_history.html", wiki = wiki, article = article, diffs = diffs, diff_dict = diff_dict, editor_dict = editor_dict)
 
 

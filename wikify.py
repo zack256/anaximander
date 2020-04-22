@@ -6,6 +6,8 @@ checkers = {
 }
 
 def make_local_link(wiki, linked, display):
+    linked.replace(" ", "_")
+    linked = linked[0].upper() + linked[1:] if linked else linked
     return '<a href = "/wikis/{}/articles/{}/">{}</a>'.format(wiki.name, linked.replace(" ", "_"), display)
 
 def replace_with(string, what, wiki = None):
