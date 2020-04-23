@@ -449,7 +449,8 @@ def edit_article_form_handler(reqd_w, reqd_a):
         return "Article not found in file system!"
     body = request.form["article"]
     desc = request.form["desc"]
-    edit_article(wiki, article, body, desc, current_user)
+    minor = request.form.get("minor")
+    edit_article(wiki, article, body, desc, minor, current_user)
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 def add_sub_diff(o, i, c, d):
@@ -460,7 +461,7 @@ def add_sub_diff(o, i, c, d):
     sub_diff.diff_id = d.id
     db.session.add(sub_diff)
 
-def edit_article(wiki, article, body, desc, editor):
+def edit_article(wiki, article, body, desc, minor, editor):
     if not user_can_edit_article(editor, wiki):
         return "Insufficient roles to edit this article."
     article_path = get_article_path(wiki.name, article.name)
@@ -471,7 +472,10 @@ def edit_article(wiki, article, body, desc, editor):
     diff = Diff()
     diff.editor_id = editor.id
     diff.article_id = article.id
-    diff.action = 0
+    if minor:
+        diff.action = 2
+    else:
+        diff.action = 0
     diff.description = desc
     db.session.add(diff)
     db.session.commit() # needed for diff to have an id.

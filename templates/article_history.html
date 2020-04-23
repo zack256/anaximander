@@ -13,7 +13,7 @@
         {% set sds = diff_dict[diff.id] %}
         {% set sdiff = sds[1] - sds[0] %}
         {% set editor = editor_dict[diff.editor_id] %}
-        <li><a href = "#">{{ diff.created }}</a> by user <a href = "/users/{{ editor.username }}/">{{ editor.username }}</a> (<span class = "gTxt">+{{ sds[1] }}</span>/<span class = "rTxt">-{{ sds[0] }}</span>/<strong>{% if sdiff > 0 %}+{% endif %}{{ sdiff }}</strong>) <em>{{ diff.description }}</em></li>
+        <li><a href = "#">{{ diff.created }}</a> by user <a href = "/users/{{ editor.username }}/">{{ editor.username }}</a> (<span class = "gTxt">+{{ sds[1] }}</span>/<span class = "rTxt">-{{ sds[0] }}</span>/<strong>{% if sdiff > 0 %}+{% endif %}{{ sdiff }}</strong>)<em> {{ diff.description }}</em>{% if diff.action == 2 %}<strong> (m)</strong>{% endif %}</li>
         {% endfor %}
     </ul>
 </div>
