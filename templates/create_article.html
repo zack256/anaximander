@@ -8,8 +8,10 @@
 <p>Give your article a name. Keep in mind this will be used with URLs.</p>
 <input class = "input" type = "text" name = "name" maxlength = "80" pattern = "^([ ]?[a-zA-Z0-9().,!~*'\-[\]{}])+$" id = "createArticleName" form = "createArticleForm">
 <p>Write the article below. Click the "Preview" and "Changes" buttons to check your progress, and hit "Create" when you are finished.</p>
-<textarea class = "textarea wiki-text-box" placeholder = "Don't be shy, you got this!" rows = "24" name = "article" form = "createArticleForm"></textarea>
-<br/>
+<textarea class = "textarea wiki-text-box" placeholder = "Don't be shy, you got this!" rows = "23" name = "article" form = "createArticleForm" id = "createArticleBody"></textarea>
+<p>(Optional) Provide a description of your edit.</p>
+<input class = "input" type = "text" name = "desc" maxlength = "256" form = "createArticleForm">
+<br/><br/>
 <div class = "buttons">
     <script>var createArticleSubmitted = false;</script>
     <button class = "button is-success" type = "submit" form = "createArticleForm">Create</button>

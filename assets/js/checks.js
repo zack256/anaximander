@@ -13,11 +13,15 @@ function addWikiCheck () {
 }
 function createArticleCheck () {
     var articleName = document.getElementById("createArticleName").value;
+    var articleBody = document.getElementById("createArticleBody").value;
     if (articleName.length == 0) {
         return alertError("Article name cannot be blank.");
     }
     if (articleName[0] != articleName[0].toUpperCase()) {
         return alertError("First letter of article name cannot be lowercase.");
+    }
+    if (articleBody.length == 0) {
+        return alertError("Article body cannot be blank.");
     }
     return baseFinalCheck("Are you sure you want to create this article?");
 }

@@ -122,7 +122,8 @@ class Diff(db.Model):
     __tablename__ = "diffs"
     id = db.Column(db.Integer, primary_key = True)
     created = db.Column(db.DateTime())
-    action = db.Column(db.Integer)  # Regular edit (0), Initial Diff (1), Name Change (2), Protection Change (3), more to come?
+    action = db.Column(db.Integer)  # Regular edit (0), Initial Diff (1), Minor Edit (2), Name Change (3), Protection Change (4), more to come?
+    description = db.Column(db.String(256), server_default = "")
     editor_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
     article_id = db.Column(db.Integer(), db.ForeignKey('articles.id', ondelete = 'CASCADE'))
     sub_diffs = db.relationship("SubDiff", backref = "diff")
@@ -335,7 +336,7 @@ def user_can_edit_article(user, wiki):
 def user_can_read_article(user, wiki):
     return True # later.
 
-def create_article(wiki, name, body, creator):
+def create_article(wiki, name, body, desc, creator):
     if not user_can_create_article(creator, wiki):
         return "Insufficient roles to create an article on this wiki."
     name = name.replace(" ", "_")
@@ -348,6 +349,8 @@ def create_article(wiki, name, body, creator):
     if os.path.isfile(article_path):
         return "Article not in database, but cannot be added as a file with the same name exists."
     body = body.replace("\r", "")
+    if len(body) == 0:
+        return "Article body cannot be blank."
     with open(article_path, "w") as file:
         file.write(body)
     created = datetime.datetime.now()
@@ -361,6 +364,7 @@ def create_article(wiki, name, body, creator):
     db.session.commit()
     initial_diff = Diff()
     initial_diff.action = 1
+    initial_diff.description = desc
     initial_diff.created = created
     initial_diff.editor_id = creator.id
     initial_diff.article_id = new_article.id
@@ -383,7 +387,8 @@ def create_article_handler(requested):
         return "Wiki not found!"
     name = request.form["name"]
     body = request.form["article"]
-    return create_article(wiki, name, body, current_user)
+    desc = request.form["desc"]
+    return create_article(wiki, name, body, desc, current_user)
 
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>")
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/")
@@ -443,7 +448,8 @@ def edit_article_form_handler(reqd_w, reqd_a):
     if not article_in_files(wiki.name, article.name):
         return "Article not found in file system!"
     body = request.form["article"]
-    edit_article(wiki, article, body, current_user)
+    desc = request.form["desc"]
+    edit_article(wiki, article, body, desc, current_user)
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 def add_sub_diff(o, i, c, d):
@@ -454,7 +460,7 @@ def add_sub_diff(o, i, c, d):
     sub_diff.diff_id = d.id
     db.session.add(sub_diff)
 
-def edit_article(wiki, article, body, editor):
+def edit_article(wiki, article, body, desc, editor):
     if not user_can_edit_article(editor, wiki):
         return "Insufficient roles to edit this article."
     article_path = get_article_path(wiki.name, article.name)
@@ -466,6 +472,7 @@ def edit_article(wiki, article, body, editor):
     diff.editor_id = editor.id
     diff.article_id = article.id
     diff.action = 0
+    diff.description = desc
     db.session.add(diff)
     db.session.commit() # needed for diff to have an id.
     for subtraction in subtractions:
