@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set un = current_user.username %}
+{% block title %}{{ un }} - Contributions{% endblock %}
+{% block content %}
+<h3 class = "title is-3">{{ un }} - Contributions</h3>
+<h5 class = "subtitle is-5"><a href = "/">Home</a> | <a href = "/users/{{ un }}/">{{ un }}</a></h5>
+<br/>
+<div class = "content">
+    <ul>
+        {% for diff in diffs %}
+        {% set sds = diff_dict[diff.id] %}
+        {% set sdiff = sds[1] - sds[0] %}
+        {% set article = article_dict[diff.article_id] %}
+        {% set wiki = wiki_dict[article.wiki_id] %}
+        {% set wiki_link = "/wikis/" + wiki.name %}
+        <li>{{ diff.created }} - (<a href = "{{ wiki_link }}/">{{ wiki.full }}</a>) <a href = "{{ wiki_link }}/articles/{{ article.name }}/">{{ article.readable_name() }}</a> (<span class = "gTxt">+{{ sds[1] }}</span>/<span class = "rTxt">-{{ sds[0] }}</span>/<strong>{% if sdiff > 0 %}+{% endif %}{{ sdiff }}</strong>)<em> {{ diff.description }}</em>{% if diff.action == 2 %}<strong> (m)</strong>{% endif %}</li>
+        {% endfor %}
+    </ul>
+</div>
+<br/>
+<h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
+{% endblock %}

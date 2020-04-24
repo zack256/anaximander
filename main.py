@@ -149,6 +149,28 @@ def user_page_handler(username):
         return "User not found."
     return requested_user.username + " has been a member since " + str(requested_user.registered) + "."
 
+@app.route("/users/<username>/contributions")
+@app.route("/users/<username>/contributions/")
+def user_contributions_pg_handle(username):
+    reqd = User.query.filter(User.username == username).first()
+    if reqd == None:
+        return "User not found."
+    diffs = Diff.query.filter(Diff.editor_id == reqd.id).order_by(Diff.created.desc()).limit(50).all()
+    article_id_set = set(); diff_dict = {}
+    for dif in diffs:
+        article_id_set.add(dif.article_id)
+        diff_dict[dif.id] = [0, 0]
+    articles = Article.query.filter(Article.id.in_(article_id_set)).all(); article_dict = {}; wiki_id_set = set()
+    for art in articles:
+        article_dict[art.id] = art
+        wiki_id_set.add(art.wiki_id)
+    wiki_dict = {wiki.id : wiki for wiki in Wiki.query.filter(Wiki.id.in_(wiki_id_set)).all()}
+    subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).all()
+    for subdif in subdiffs:
+        diff_dict[subdif.diff_id][subdif.operation] += len(subdif.content)
+    app.logger.error(["hello", diffs, article_dict, diff_dict, wiki_dict])
+    return render_template("contributions.html", diffs = diffs, article_dict = article_dict, diff_dict = diff_dict, wiki_dict = wiki_dict)
+
 def make_initial_user(username, password, email):
     users = User.query.all()
     if len(users) != 0:
