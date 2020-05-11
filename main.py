@@ -27,7 +27,7 @@ class User(db.Model, UserMixin):
     last_name = db.Column(db.String(100), nullable = False, server_default = '')
     avatar = db.Column(db.String(50), nullable = False, server_default = '')
 
-    registered = db.Column(db.DateTime())
+    registered = db.Column(db.DateTime(), default = db.func.now())
     seen = db.Column(db.DateTime())
 
     # Relationships
@@ -37,9 +37,6 @@ class User(db.Model, UserMixin):
     wikis = db.relationship("Member", backref = "user_m")
     articles = db.relationship("Article", backref = "creator")
     diffs = db.relationship("Diff", backref = "editor")
-
-    def set_registered_datetime(self):
-        self.registered = datetime.datetime.now()   # have to modify some flask-user stuff for this.
 
 class Role(db.Model):
     id = db.Column(db.Integer(), primary_key = True)
