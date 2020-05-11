@@ -144,7 +144,7 @@ def user_page_handler(username):
     requested_user = User.query.filter(User.username == username).first()
     if requested_user == None:
         return "User not found."
-    return requested_user.username + " has been a member since " + str(requested_user.registered) + "."
+    return render_template("user.html", uu = requested_user)
 
 @app.route("/users/<username>/contributions")
 @app.route("/users/<username>/contributions/")
@@ -165,8 +165,7 @@ def user_contributions_pg_handle(username):
     subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).all()
     for subdif in subdiffs:
         diff_dict[subdif.diff_id][subdif.operation] += len(subdif.content)
-    app.logger.error(["hello", diffs, article_dict, diff_dict, wiki_dict])
-    return render_template("contributions.html", diffs = diffs, article_dict = article_dict, diff_dict = diff_dict, wiki_dict = wiki_dict)
+    return render_template("contributions.html", diffs = diffs, article_dict = article_dict, diff_dict = diff_dict, wiki_dict = wiki_dict, uu = reqd)
 
 def make_initial_user(username, password, email):
     users = User.query.all()
