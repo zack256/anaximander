@@ -329,13 +329,23 @@ def add_wiki_handler():
         return "Something went wrong!"
     return redirect("/wikis/{}/".format(name))
 
-@app.route("/wikis/<requested>/new/article")
-@app.route("/wikis/<requested>/new/article/")
+@app.route("/wikis/<requested>/new/article", methods = ["GET", "POST"])
+@app.route("/wikis/<requested>/new/article/", methods = ["GET", "POST"])
 @login_required
 def add_article_pg_handler(requested):
+    app.logger.error("meh")
     wiki = Wiki.query.filter(Wiki.name == requested).first()
     if wiki == None:
         return "Wiki not found!"
+
+    if request.method == "POST":
+        app.logger.error("eh")
+        body = request.form["article"]
+        desc = request.form["desc"]
+        article_name = request.form["name"]
+        html = wikify.simple_wikify(body, wiki)
+        return render_template("create_article.html", wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, article_name = article_name)
+
     return render_template("create_article.html", wiki = wiki)
 
 def user_clearance_level(user, wiki):

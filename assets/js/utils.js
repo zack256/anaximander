@@ -1,5 +1,5 @@
-function previewEdit () {
-    var editForm = document.getElementById("editArticleForm")
+function previewEdit (formID) {
+    var editForm = document.getElementById(formID)
     editForm.removeAttribute("action");
     editForm.submit()
 }
