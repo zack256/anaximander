@@ -8,17 +8,25 @@
 <h3 class = "title is-3">{{ a_n_title }}</h3>
 <h5 class = "subtitle is-5">{{ wiki.full }} | <a href = "{{ home_url }}/">Wiki Home</a> | <a href = "{{ article_url }}/">Read Article</a> | <a href = "{{ article_url }}/history/">Article History</a></h5>
 <br/>
+{% if preview %}
+<p>Previewing edits.</p>
+<hr>
+{{ article_html|safe }}
+<hr>
+<p>Edit summary : <a href = "/users/{{ current_user.username }}/">{{ current_user.username }}</a> - {{ desc }}{% if minor %}<strong> (m)</strong>{% endif %}</p>
+<hr>
+{% endif %}
 <form method = "POST" action = "/wikis/{{ wiki.name }}/forms/edit-article/{{ article.name }}/" id = "editArticleForm" onsubmit = "if (editArticleSubmitted) { return false; } else { if (editArticleCheck()) { editArticleSubmitted = true; return true; } else { return false; } }"></form>
 <p>Edit the article below. Click the "Preview" and "Changes" buttons to check your progress, and hit "Edit" when you are finished.</p>
 <textarea class = "textarea wiki-text-box" rows = "24" name = "article" form = "editArticleForm">{{ article_text }}</textarea>
 <p>(Optional) Provide a description of your edit.</p>
-<input class = "input" type = "text" name = "desc" maxlength = "256" form = "editArticleForm">
-<label class = "checkbox"><input type = "checkbox" name = "minor" form = "editArticleForm"> Minor edit</label>
+<input class = "input" type = "text" name = "desc" maxlength = "256" form = "editArticleForm"{% if desc %} value = "{{ desc }}"{% endif %}>
+<label class = "checkbox"><input type = "checkbox" name = "minor" form = "editArticleForm"{% if minor %} checked = "checked"{% endif %}> Minor edit</label>
 <br/><br/>
 <div class = "buttons">
     <script>var editArticleSubmitted = false;</script>
     <button class = "button is-success" type = "submit" form = "editArticleForm">Edit</button>
-    <button class = "button is-info">Preview</button>
+    <button class = "button is-info" type = "submit" onclick = "previewEdit();">Preview</button>
     <button class = "button is-warning">Changes</button>
 </div>
 <h3 class = "subtitle is-5"><a href = "/">Home</a></h3>

@@ -426,8 +426,8 @@ def article_page_handle(reqd_w, reqd_a):
     html = wikify.simple_wikify(text, wiki)
     return render_template("article.html", article = article, wiki = wiki, article_html = html)
 
-@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit")
-@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit/")
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit", methods = ["GET", "POST"])
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit/", methods = ["GET", "POST"])
 @login_required
 def article_edit_page_handle(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
@@ -441,6 +441,14 @@ def article_edit_page_handle(reqd_w, reqd_a):
     article_path = article_in_files(wiki.name, article.name)
     if not article_path:
         return "Article not found in file system!"
+
+    if request.method == "POST":
+        body = request.form["article"]
+        desc = request.form["desc"]
+        minor = request.form.get("minor")
+        html = wikify.simple_wikify(body, wiki)
+        return render_template("edit_article.html", article = article, wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, minor = minor)
+
     with open(article_path) as fi:
         text = fi.read()
     return render_template("edit_article.html", article = article, wiki = wiki, article_text = text)
