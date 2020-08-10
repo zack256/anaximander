@@ -10,6 +10,7 @@ import work.diff
 import config.constants as cons
 import string
 import start_db
+from sqlalchemy.sql.expression import func as sql_func
 
 app, db = start_db.app, start_db.db
 
@@ -138,7 +139,6 @@ def home_page_handler():
     #return "Home Page, cool."
     return render_template("index.html", wikis = Wiki.query.all())
 
-@app.route("/users/<username>")
 @app.route("/users/<username>/")
 def user_page_handler(username):
     requested_user = User.query.filter(User.username == username).first()
@@ -146,7 +146,6 @@ def user_page_handler(username):
         return "User not found."
     return render_template("user.html", uu = requested_user)
 
-@app.route("/users/<username>/contributions")
 @app.route("/users/<username>/contributions/")
 def user_contributions_pg_handle(username):
     reqd = User.query.filter(User.username == username).first()
@@ -204,7 +203,6 @@ def get_presentable_date(utc_date):
     est_date = utc_date - datetime.timedelta(hours = 4)
     return str(est_date.month) + "/" + str(est_date.day) + "/" + str(est_date.year)
 
-@app.route("/news/articles/<requested>")
 @app.route("/news/articles/<requested>/")
 def news_article_handler(requested):
     article = NewsArticle.query.filter(NewsArticle.name == requested).first()
@@ -242,7 +240,6 @@ def get_user_dict(users):
         d[user.id] = user
     return d
 
-@app.route("/news/tags/<requested>")
 @app.route("/news/tags/<requested>/")
 def news_tag_handler(requested):
     tag = NewsTag.query.filter(NewsTag.name == requested).first()
@@ -256,7 +253,6 @@ def news_tag_handler(requested):
     article_lists = sorted(article_lists, key = lambda x : x[1], reverse = True)
     return render_template("news/tag.html", article_lists = article_lists, tag = tag, author = author, est_date = get_presentable_date)
 
-@app.route("/news")
 @app.route("/news/")
 def news_page_handler():
     articles = NewsArticle.query.all()
@@ -268,7 +264,6 @@ def news_page_handler():
     is_editor = user_has_role(current_user, cons.NEWS_EDITOR_ROLE_NAME)
     return render_template("news/home.html", article_lists = article_lists, est_date = get_presentable_date, is_editor = is_editor)
 
-@app.route("/news/authors/<requested>")
 @app.route("/news/authors/<requested>/")
 def news_author_handler(requested):
     user = User.query.filter(User.username == requested).first()
@@ -309,7 +304,6 @@ def add_wiki(name, full, description, creator):
     make_wiki_dirs(wiki_dir_path)
     return True
 
-@app.route("/wikis/<requested>")
 @app.route("/wikis/<requested>/")
 def wiki_home_page_handler(requested):
     wiki = Wiki.query.filter(Wiki.name == requested).first()
@@ -329,17 +323,14 @@ def add_wiki_handler():
         return "Something went wrong!"
     return redirect("/wikis/{}/".format(name))
 
-@app.route("/wikis/<requested>/new/article", methods = ["GET", "POST"])
 @app.route("/wikis/<requested>/new/article/", methods = ["GET", "POST"])
 @login_required
 def add_article_pg_handler(requested):
-    app.logger.error("meh")
     wiki = Wiki.query.filter(Wiki.name == requested).first()
     if wiki == None:
         return "Wiki not found!"
 
     if request.method == "POST":
-        app.logger.error("eh")
         body = request.form["article"]
         desc = request.form["desc"]
         article_name = request.form["name"]
@@ -418,7 +409,6 @@ def create_article_handler(requested):
     desc = request.form["desc"]
     return create_article(wiki, name, body, desc, current_user)
 
-@app.route("/wikis/<reqd_w>/articles/<reqd_a>")
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/")
 def article_page_handle(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
@@ -436,7 +426,6 @@ def article_page_handle(reqd_w, reqd_a):
     html = wikify.simple_wikify(text, wiki)
     return render_template("article.html", article = article, wiki = wiki, article_html = html)
 
-@app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit", methods = ["GET", "POST"])
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit/", methods = ["GET", "POST"])
 @login_required
 def article_edit_page_handle(reqd_w, reqd_a):
@@ -456,6 +445,7 @@ def article_edit_page_handle(reqd_w, reqd_a):
         body = request.form["article"]
         desc = request.form["desc"]
         minor = request.form.get("minor")
+        body = body.replace("\r", "")
         html = wikify.simple_wikify(body, wiki)
         return render_template("edit_article.html", article = article, wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, minor = minor)
 
@@ -529,19 +519,16 @@ def make_news_author_role():
     db.session.add(author_role)
     db.session.commit()
 
-@app.route("/news/editor")
 @app.route("/news/editor/")
 @roles_required(cons.NEWS_EDITOR_ROLE_NAME)
 def news_editor_pg_handle():
     return render_template("news/editor.html")
 
-@app.route("/news/editor/create-article")
 @app.route("/news/editor/create-article/")
 @roles_required(cons.NEWS_EDITOR_ROLE_NAME)
 def news_editor_new_article_pg_handle():
     return render_template("news/editor_new_article.html")
 
-@app.route("/news/editor/tags")
 @app.route("/news/editor/tags/")
 @roles_required(cons.NEWS_EDITOR_ROLE_NAME)
 def news_editor_tags_pg_handle():
@@ -549,7 +536,6 @@ def news_editor_tags_pg_handle():
     users_dict = {t.author_id : t.author for t in tags}
     return render_template("news/tag_editor.html", tags = tags, users_dict = users_dict)
 
-@app.route("/unauthorized")
 @app.route("/unauthorized/")
 def unauthorized_handle():
     return "You are unauthorized to view that page!"
@@ -604,7 +590,6 @@ def edit_news_tag_handle():
     db.session.commit()
     return redirect("/news/editor/tags/")
 
-@app.route("/wikis/<reqd_w>/articles/<reqd_a>/history")
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/history/")
 def article_history_page_handle(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
@@ -626,5 +611,15 @@ def article_history_page_handle(reqd_w, reqd_a):
         diff_dict[subdiff.diff_id][subdiff.operation] += len(subdiff.content)
     editor_dict = {ed.id : ed for ed in editors}
     return render_template("article_history.html", wiki = wiki, article = article, diffs = diffs, diff_dict = diff_dict, editor_dict = editor_dict)
+
+@app.route("/wikis/<reqd_w>/meta/random/")
+def random_article_in_wiki_page_handle(reqd_w):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
+    article = Article.query.filter(Article.wiki_id == wiki.id).order_by(sql_func.rand()).limit(1).all()[0]
+    return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 
