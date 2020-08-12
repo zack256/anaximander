@@ -6,7 +6,7 @@ import datetime
 import restrict
 import utils
 import wikify
-import work.diff
+import work.diff, work.transform
 import config.constants as cons
 import string
 import start_db
@@ -334,6 +334,7 @@ def add_article_pg_handler(requested):
         body = request.form["article"]
         desc = request.form["desc"]
         article_name = request.form["name"]
+        body = body.replace("\r", "")
         html = wikify.simple_wikify(body, wiki)
         return render_template("create_article.html", wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, article_name = article_name)
 
@@ -621,5 +622,29 @@ def random_article_in_wiki_page_handle(reqd_w):
         return "Insufficient roles to read this article."
     article = Article.query.filter(Article.wiki_id == wiki.id).order_by(sql_func.rand()).limit(1).all()[0]
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
+
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/revisions/<reqd_d>/")
+def article_revision_page(reqd_w, reqd_a, reqd_d):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
+    diff = Diff.query.get(reqd_d)
+    if not diff or diff.article.name != reqd_a:
+        return "Diff and/or article bad!"
+    article = diff.article
+    diff_list = Diff.query.filter((Diff.article_id == article.id) & (Diff.created > diff.created)).order_by(Diff.created.desc()).all()  # not including requested diff, as revision will be everything before it.
+    diff_dict = {dif.id : [[], []] for dif in diff_list}
+    subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).order_by(SubDiff.id).all()    # hrmm..ordering by id..
+    for subdiff in subdiffs:
+        diff_dict[subdiff.diff_id][subdiff.operation].append([subdiff.index, subdiff.content])
+    article_path = get_article_path(wiki.name, article.name)
+    with open(article_path) as file:
+        body = file.read()
+    for dif in diff_list:
+        body = work.transform.backwards_transform(body, diff_dict[dif.id][0], diff_dict[dif.id][1])
+    html = wikify.simple_wikify(body, wiki)
+    return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff.id)
 
 
