@@ -634,7 +634,17 @@ def article_revision_page(reqd_w, reqd_a, reqd_d):
     if not diff or diff.article.name != reqd_a:
         return "Diff and/or article bad!"
     article = diff.article
-    diff_list = Diff.query.filter((Diff.article_id == article.id) & (Diff.created > diff.created)).order_by(Diff.created.desc()).all()  # not including requested diff, as revision will be everything before it.
+    #diff_list = Diff.query.filter((Diff.article_id == article.id) & (Diff.created > diff.created)).order_by(Diff.created.desc()).all()
+    full_diff_list = Diff.query.filter(Diff.article_id == article.id).order_by(Diff.created.desc()).all()
+    next_diff = prev_diff = None
+    for c, el in enumerate(full_diff_list):
+        if el.id == diff.id:
+            break
+    diff_list = full_diff_list[:c]
+    if c != 0:
+        next_diff = full_diff_list[c - 1]
+    if c != len(full_diff_list) - 1:
+        prev_diff = full_diff_list[c + 1]
     diff_dict = {dif.id : [[], []] for dif in diff_list}
     subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).order_by(SubDiff.id).all()    # hrmm..ordering by id..
     for subdiff in subdiffs:
@@ -645,6 +655,6 @@ def article_revision_page(reqd_w, reqd_a, reqd_d):
     for dif in diff_list:
         body = work.transform.backwards_transform(body, diff_dict[dif.id][0], diff_dict[dif.id][1])
     html = wikify.simple_wikify(body, wiki)
-    return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff.id)
+    return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff.id, next_diff = next_diff, prev_diff = prev_diff)
 
 

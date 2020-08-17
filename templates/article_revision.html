@@ -6,6 +6,7 @@
 {% set article_url = home_url + "/articles/" + article.name %}
 <h3 class = "title is-3">{{ a_n }} (Revision ID {{ revision }})</h3>
 <h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "{{ home_url }}/">Wiki Home</a> | <a href = "{{ article_url }}/edit/">Edit Article</a> | <a href = "{{ article_url }}/history/">View History</a></h5>
+<h5 class = "subtitle is-5">{% if prev_diff %}<a href = "{{ article_url }}/revisions/{{ prev_diff.id }}/">Previous revision</a>{% else %}On oldest revision{% endif %} | {% if next_diff %}<a href = "{{ article_url }}/revisions/{{ next_diff.id }}/">Next revision</a>{% else %}On latest revision{% endif %}</h5>
 <br/>
 {{ article_html|safe }}
 <br/>
