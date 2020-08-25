@@ -341,20 +341,27 @@ def add_article_pg_handler(requested):
     return render_template("create_article.html", wiki = wiki)
 
 def user_clearance_level(user, wiki):
+    if not user.is_authenticated:
+        return -1
     member = Member.query.filter((Member.wiki_id == wiki.id) & (Member.user_id == user.id)).first()
     return member.clearance if member else -1
 
 def user_can_create_article(user, wiki):
-    clearance = user_clearance_level(user, wiki)
-    if wiki.privacy >= 1:
-        return clearance >= 2
-    return clearance != 0
+    return user_can_edit_article(user, wiki)  # for now.
 
 def user_can_edit_article(user, wiki):
-    return user_can_create_article(user, wiki)  # for now.
+    clearance = user_clearance_level(user, wiki)
+    if wiki.privacy == 1:
+        return clearance >= 2
+    elif wiki.privacy == 2:
+        return clearance >= 3
+    return clearance != 0
 
 def user_can_read_article(user, wiki):
-    return True # later.
+    clearance = user_clearance_level(user, wiki)
+    if wiki.privacy == 2:
+        return clearance >= 1
+    return True
 
 def create_article(wiki, name, body, desc, creator):
     if not user_can_create_article(creator, wiki):
@@ -620,7 +627,11 @@ def random_article_in_wiki_page_handle(reqd_w):
         return "Wiki not found!"
     if not user_can_read_article(current_user, wiki):
         return "Insufficient roles to read this article."
-    article = Article.query.filter(Article.wiki_id == wiki.id).order_by(sql_func.rand()).limit(1).all()[0]
+    random_query = Article.query.filter(Article.wiki_id == wiki.id).order_by(sql_func.rand()).limit(1).all()
+    if random_query:
+        article = random_query[0]
+    else:
+        return "No articles in wiki!"
     return redirect("/wikis/{}/articles/{}/".format(wiki.name, article.name))
 
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/revisions/<reqd_d>/")
@@ -657,4 +668,25 @@ def article_revision_page(reqd_w, reqd_a, reqd_d):
     html = wikify.simple_wikify(body, wiki)
     return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff.id, next_diff = next_diff, prev_diff = prev_diff)
 
+@app.route("/wikis/<requested>/meta/settings/")
+def wiki_settings_page_handler(requested):
+    wiki = Wiki.query.filter(Wiki.name == requested).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
+    return render_template("wiki_settings.html", wiki = wiki)
+
+@app.route("/wikis/<reqd_w>/forms/edit-wiki-settings/", methods = ["POST"])
+@login_required
+def edit_wiki_settings_form_handler(reqd_w):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if user_clearance_level(current_user, wiki) < 3:
+        return "Insufficient roles to edit wiki settings."
+    privacy = request.form["wiki_privacy"]
+    wiki.privacy = privacy
+    db.session.commit()
+    return redirect("/wikis/{}/meta/settings/".format(wiki.name))
 

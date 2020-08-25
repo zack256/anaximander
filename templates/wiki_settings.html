@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ wiki.full }} - Wiki Settings{% endblock %}
+{% block content %}
+{% set home_url = "/wikis/" + wiki.name %}
+<h3 class = "title is-3">Wiki Settings - {{ wiki.full }}</h3>
+<form id = "edit_wiki_form" action = "{{ home_url }}/forms/edit-wiki-settings/" method = "POST" onsubmit = "if (createArticleSubmitted) { return false; } else { if (createArticleCheck()) { createArticleSubmitted = true; return true; } else { return false; } }"></form>
+<h5 class = "subtitle is-5">Privacy</h5>
+<table class = "table is-striped is-fullwidth">
+    <tbody>
+        <tr>
+            <td>Wiki Privacy</td>
+            <td>
+                <div class = "select">
+                    <select name = "wiki_privacy" form = "edit_wiki_form" id = "wiki_privacy_select">
+                        <option value = "0">Public</option>
+                        <option value = "1">Semi-Public</option>
+                        <option value = "2">Private</option>
+                    </select>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class = "buttons">
+    <button class = "button is-success" type = "submit" form = "edit_wiki_form">Submit</button>
+    <button class = "button is-danger" type = "reset" form = "edit_wiki_form">Cancel</button>
+</div>
+<h3 class = "subtitle is-5"><a href = "/">Home</a> | <a href = "{{ home_url }}/">Wiki Home</a></h3>
+{% endblock %}
+{% block more_bottom %}
+<script>
+    var body = document.getElementsByTagName("BODY")[0];
+    body.onload = function () {
+        selectCorrectOption("wiki_privacy_select", "{{ wiki.privacy }}");
+    };
+</script>
+{% endblock %}

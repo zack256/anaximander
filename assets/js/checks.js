@@ -37,3 +37,7 @@ function createNewsArticleCheck () {
 function editTagCheck () {
     return baseFinalCheck("Are you sure you want to edit this news tag?");
 }
+
+function editWikiSettingsCheck () {
+    return baseFinalCheck("Are you sure you want to edit the settings of this wiki?");
+}
