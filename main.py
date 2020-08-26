@@ -309,6 +309,8 @@ def wiki_home_page_handler(requested):
     wiki = Wiki.query.filter(Wiki.name == requested).first()
     if wiki == None:
         return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
     creator = User.query.join(Member).join(Wiki).filter((Member.wiki_id == wiki.id) & (Member.clearance == 4)).first()
     articles = sorted(wiki.articles, key = lambda x : x.name)
     return render_template("wiki.html", wiki = wiki, creator = creator, articles = articles)
@@ -422,6 +424,8 @@ def article_page_handle(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
     if wiki == None:
         return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
     article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
     if article == None:
         return "Article not found!"
@@ -689,4 +693,19 @@ def edit_wiki_settings_form_handler(reqd_w):
     wiki.privacy = privacy
     db.session.commit()
     return redirect("/wikis/{}/meta/settings/".format(wiki.name))
+
+@app.route("/wikis/<requested>/meta/members/")
+def wiki_members_page_handler(requested):
+    wiki = Wiki.query.filter(Wiki.name == requested).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
+    members = wiki.users
+    users_dict = { member.user_id : None for member in members }
+    users = User.query.filter(User.id.in_(users_dict)).all()
+    for user in users:
+        users_dict[user.id] = user
+    members.sort(key = lambda x : [-x.clearance, users_dict[x.user_id].username])
+    return render_template("wiki_members.html", wiki = wiki, members = members, users_dict = users_dict)
 
