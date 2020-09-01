@@ -709,3 +709,25 @@ def wiki_members_page_handler(requested):
     members.sort(key = lambda x : [-x.clearance, users_dict[x.user_id].username])
     return render_template("wiki_members.html", wiki = wiki, members = members, users_dict = users_dict)
 
+@app.route("/wikis/<reqd_w>/forms/invite-member/", methods = ["POST"])
+@login_required
+def invite_member_to_wiki(reqd_w):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if user_clearance_level(current_user, wiki) < 3:
+        return "Insufficient roles to invite member."
+    reqd_username = request.form["username"]
+    user = User.query.filter(User.username == reqd_username).first()
+    if not user:
+        return "No user found with that name."
+    clearance_level = user_clearance_level(user, wiki)
+    if clearance_level != -1:
+        return "User already has a clearance level for the wiki."
+    member = Member(clearance = 1)
+    member.user = user
+    member.wiki = wiki
+    db.session.add(member)
+    db.session.commit()
+    return redirect("/wikis/{}/meta/members/".format(wiki.name))
+

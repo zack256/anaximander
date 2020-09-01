@@ -11,6 +11,9 @@ function alertError (msg) {
 function addWikiCheck () {
     return baseFinalCheck("Are you sure you want to add this wiki?");
 }
+function addMemberCheck () {
+    return baseFinalCheck("Are you sure you want to add this user to the wiki?");
+}
 function createArticleCheck () {
     var articleName = document.getElementById("createArticleName").value;
     var articleBody = document.getElementById("createArticleBody").value;

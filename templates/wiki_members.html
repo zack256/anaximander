@@ -1,5 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{{ wiki.full }} - Wiki Members{% endblock %}
+{% block modals %}
+<div class = "modal mft" id = "addMemberModal">
+    <div class="modal-background" onclick = "deactivateModal('addMemberModal');"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Add Member to Wiki</p>
+            <button class="delete" aria-label="close" onclick = "deactivateModal('addMemberModal');"></button>
+        </header>
+        <section class="modal-card-body">
+            <script>var addMemberSubmitted = false;</script>
+            <form id = "addMemberForm" action = "/wikis/{{ wiki.name }}/forms/invite-member/" method = "POST" onsubmit = "if (addMemberSubmitted) { return false; } else { if (addMemberCheck()) { addMemberSubmitted = true; return true; } else { return false; } }"></form>
+            <table class = "table is-striped is-fullwidth">
+                <tbody>
+                    <tr>
+                        <td>Username</td>
+                        <td><input name = "username" type = "text" class = "input" maxlength = "50" form = "addMemberForm"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <footer class="modal-card-foot">
+            <button class = "button is-success" type = "submit" form = "addMemberForm">Submit</button>
+            <button class = "button is-danger" type = "reset" form = "addMemberForm">Cancel</button>
+        </footer>
+    </div>
+</div>
+{% endblock %}
 {% block content %}
 {% set home_url = "/wikis/" + wiki.name %}
 <h3 class = "title is-3">Wiki Members - {{ wiki.full }}</h3>
@@ -20,5 +47,6 @@
         {% endfor %}
     </tbody>
 </table>
+<button class = "button is-primary" onclick = "activateModal('addMemberModal');">Add Member</button>
 <h3 class = "subtitle is-5"><a href = "/">Home</a> | <a href = "{{ home_url }}/">Wiki Home</a></h3>
 {% endblock %}
