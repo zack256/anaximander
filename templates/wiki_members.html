@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ wiki.full }} - Wiki Members{% endblock %}
 {% block modals %}
+{% if user_can_edit_clearances %}
 <div class = "modal mft" id = "addMemberModal">
     <div class="modal-background" onclick = "deactivateModal('addMemberModal');"></div>
     <div class="modal-card">
@@ -26,6 +27,46 @@
         </footer>
     </div>
 </div>
+<div class = "modal mft" id = "editMemberModal">
+    <div class="modal-background" onclick = "deactivateModal('editMemberModal');"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Edit Member Clearance</p>
+            <button class="delete" aria-label="close" onclick = "deactivateModal('editMemberModal');"></button>
+        </header>
+        <section class="modal-card-body">
+            <script>var editMemberSubmitted = false;</script>
+            <form id = "editMemberForm" action = "/wikis/{{ wiki.name }}/forms/edit-member-clearance/" method = "POST" onsubmit = "if (editMemberSubmitted) { return false; } else { if (editMemberCheck()) { editMemberSubmitted = true; return true; } else { return false; } }"></form>
+            <table class = "table is-striped is-fullwidth">
+                <tbody>
+                    <tr>
+                        <td>Username</td>
+                        <input type = "hidden" name = "username" form = "editMemberForm" id = "editMemberUsernameInput">
+                        <td id = "editMemberUsername"></td>
+                    </tr>
+                    <tr>
+                        <td>Clearance</td>
+                        <td>
+                            <div class = "select">
+                                <select name = "level" id = "editMemberClearance" form = "editMemberForm">
+                                    <option value = "-1">No clearance</option>
+                                    <option value = "0">Banned</option>
+                                    <option value = "1">Level 1</option>
+                                    <option value = "2">Level 2</option>
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <footer class="modal-card-foot">
+            <button class = "button is-success" type = "submit" form = "editMemberForm">Submit</button>
+            <button class = "button is-danger" type = "reset" form = "editMemberForm">Cancel</button>
+        </footer>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 {% block content %}
 {% set home_url = "/wikis/" + wiki.name %}
@@ -42,11 +83,14 @@
         {% for member in members %}
         <tr>
             <td><a href = "/users/{{ users_dict[member.user_id].username }}/">{{ users_dict[member.user_id].username }}</a></td>
-            <td>{{ member.clearance }}</td>
+            <td>{{ member.clearance }}{% if user_can_edit_clearances and member.user_id != current_user.id %} <a onclick = "fillEditMember('{{ users_dict[member.user_id].username }}'); selectCorrectOption('editMemberClearance', '{{ member.clearance }}'); activateModal('editMemberModal');">(Edit)</a>{% endif %}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <button class = "button is-primary" onclick = "activateModal('addMemberModal');">Add Member</button>
 <h3 class = "subtitle is-5"><a href = "/">Home</a> | <a href = "{{ home_url }}/">Wiki Home</a></h3>
+{% endblock %}
+{% block more_bottom %}
+<script src = "/assets/js/members.js"></script>
 {% endblock %}

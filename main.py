@@ -707,7 +707,8 @@ def wiki_members_page_handler(requested):
     for user in users:
         users_dict[user.id] = user
     members.sort(key = lambda x : [-x.clearance, users_dict[x.user_id].username])
-    return render_template("wiki_members.html", wiki = wiki, members = members, users_dict = users_dict)
+    user_can_edit_clearances = user_clearance_level(current_user, wiki) >= 3
+    return render_template("wiki_members.html", wiki = wiki, members = members, users_dict = users_dict, user_can_edit_clearances = user_can_edit_clearances)
 
 @app.route("/wikis/<reqd_w>/forms/invite-member/", methods = ["POST"])
 @login_required
@@ -728,6 +729,34 @@ def invite_member_to_wiki(reqd_w):
     member.user = user
     member.wiki = wiki
     db.session.add(member)
+    db.session.commit()
+    return redirect("/wikis/{}/meta/members/".format(wiki.name))
+
+@app.route("/wikis/<reqd_w>/forms/edit-member-clearance/", methods = ["POST"])
+@login_required
+def edit_member_clearance_form(reqd_w):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if user_clearance_level(current_user, wiki) < 3:
+        return "Insufficient roles to edit member clearance."
+    app.logger.error(request.form)
+    reqd_username = request.form["username"]
+    user = User.query.filter(User.username == reqd_username).first()
+    if not user:
+        return "No user found with that name."
+    member = Member.query.filter((Member.user_id == user.id) & (Member.wiki_id == wiki.id)).first()
+    if not member:
+        member = Member(user_id = user.id, wiki_id = wiki.id)
+        db.session.add(member)
+        db.session.commit()
+    elif member.clearance >= 3:
+        return "Cannot demote that much yet."
+    level = min(2, int(request.form["level"]))
+    if level == -1 and member:
+        db.session.delete(member)
+    else:
+        member.clearance = level
     db.session.commit()
     return redirect("/wikis/{}/meta/members/".format(wiki.name))
 
