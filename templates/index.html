@@ -44,6 +44,8 @@
         <tr>
             <th>Name</th>
             <th>Description</th>
+            <th>Privacy</th>
+            <th>Clearance</th>
         </tr>
     </thead>
     <tbody>
@@ -51,6 +53,8 @@
         <tr>
             <td><a href = "/wikis/{{ wiki.name }}/">{{ wiki.full }}</a></td>
             <td>{{ wiki.description }}</td>
+            <td>{{ wiki.privacy_level_name() }}</td>
+            <td>{% if wiki_clearances[wiki.id] == -1 %}Non-member{% else %}{{ wiki_clearances[wiki.id] }}{% endif %}</td>
         </tr>
         {% endfor %}
     </tbody>

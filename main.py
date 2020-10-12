@@ -88,6 +88,9 @@ class Wiki(db.Model):
     users = db.relationship("Member", backref = "wiki_m")
     articles = db.relationship("Article", backref = "wiki")
 
+    def privacy_level_name(self):
+        return ["Public", "Semi-Public", "Private"][self.privacy]
+
 class Member(db.Model):
     __tablename__ = "members"
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
@@ -136,8 +139,19 @@ class SubDiff(db.Model):
 
 @app.route("/")
 def home_page_handler():
-    #return "Home Page, cool."
-    return render_template("index.html", wikis = Wiki.query.all())
+    all_wikis = Wiki.query.all()
+    wiki_clearances = {}
+    membership_dict = {mem.wiki_id : mem.clearance for mem in current_user.wikis} if current_user.is_authenticated else {}
+    for wiki in all_wikis:
+        if wiki.id in membership_dict:
+            if membership_dict[wiki.id] != 0:
+                wiki_clearances[wiki.id] = membership_dict[wiki.id]
+        elif wiki.privacy != 2:
+            wiki_clearances[wiki.id] = -1
+    shown_wikis = [wi for wi in all_wikis if wi.id in wiki_clearances]
+    app.logger.error([shown_wikis, wiki_clearances])
+    shown_wikis.sort(key = lambda x : (-wiki_clearances[x.id], x.full))
+    return render_template("index.html", wikis = shown_wikis, wiki_clearances = wiki_clearances)
 
 @app.route("/users/<username>/")
 def user_page_handler(username):
@@ -752,7 +766,7 @@ def edit_member_clearance_form(reqd_w):
         db.session.commit()
     elif member.clearance >= 3:
         return "Cannot demote that much yet."
-    level = min(2, int(request.form["level"]))
+    level = min(3, int(request.form["level"]))
     if level == -1 and member:
         db.session.delete(member)
     else:
