@@ -774,3 +774,46 @@ def edit_member_clearance_form(reqd_w):
     db.session.commit()
     return redirect("/wikis/{}/meta/members/".format(wiki.name))
 
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/diff/")
+def article_diff_comparision_page(reqd_w, reqd_a):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
+    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    if article == None:
+        return "Article not found!"
+    diff_list = Diff.query.filter(Diff.article_id == article.id).order_by(Diff.created.desc()).all()
+    article_diffs = {diff.id : diff for diff in diff_list}
+    diff_1 = request.args.get("diff1", 0, int)
+    diff_2 = request.args.get("diff2", 0, int)
+    if diff_1 not in article_diffs or diff_2 not in article_diffs:
+        return "Diff ID(s) do not belong to the article specified!"
+    diff_1, diff_2 = article_diffs[diff_1], article_diffs[diff_2]
+    if diff_2.created <= diff_1.created:
+        return "Invalid diff comparision, try changing the order."
+    diff_dict = {}
+    for di in diff_list:
+        if di.created < diff_1.created:
+            break
+        diff_dict[di.id] = [[], []]
+    subdiffs = SubDiff.query.filter(SubDiff.diff_id.in_(diff_dict)).order_by(SubDiff.id).all()
+    for subdiff in subdiffs:
+        diff_dict[subdiff.diff_id][subdiff.operation].append([subdiff.index, subdiff.content])
+    article_path = get_article_path(wiki.name, article.name)
+    with open(article_path) as file:
+        body = file.read()
+    end_body = start_body = "boo"
+    for dif in diff_list:
+        if dif.id not in diff_dict:
+            break
+        if dif.id == diff_2.id:
+            end_body = body
+        elif dif.id == diff_1.id:
+            start_body = body
+        body = work.transform.backwards_transform(body, diff_dict[dif.id][0], diff_dict[dif.id][1])
+
+    return start_body + "\n---\n" + end_body
+
+
