@@ -4,10 +4,28 @@
 {% block content %}
 {% set home_url = "/wikis/" + wiki.name %}
 {% set article_url = home_url + "/articles/" + article.name %}
+{% if comparision_mode %}
+<h3 class = "title is-3">{{ a_n }} - compare revisions</h3>
+{% else %}
 <h3 class = "title is-3">{{ a_n }} (Revision ID {{ revision }})</h3>
+{% endif %}
 <h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "{{ home_url }}/">Wiki Home</a> | <a href = "{{ article_url }}/edit/">Edit Article</a> | <a href = "{{ article_url }}/history/">View History</a></h5>
 <h5 class = "subtitle is-5">{% if prev_diff %}<a href = "{{ article_url }}/revisions/{{ prev_diff.id }}/">Previous revision</a>{% else %}On oldest revision{% endif %} | {% if next_diff %}<a href = "{{ article_url }}/revisions/{{ next_diff.id }}/">Next revision</a>{% else %}On latest revision{% endif %}</h5>
 <br/>
+{% if comparision_mode %}
+<div class = "columns">
+    <div class = "column">
+        <h5 class = "subtitle is-5">Revision {{ start_id }}</h5>
+        {{ start_body }}
+    </div>
+    <div class = "column">
+        <h5 class = "subtitle is-5">Revision {{ revision }}</h5>
+        {{ end_body }}
+    </div>
+</div>
+<hr/>
+<br/>
+{% endif %}
 {{ article_html|safe }}
 <br/>
 <h3 class = "subtitle is-5"><a href = "/">Home</a></h3>

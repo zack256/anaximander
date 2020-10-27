@@ -804,16 +804,24 @@ def article_diff_comparision_page(reqd_w, reqd_a):
     article_path = get_article_path(wiki.name, article.name)
     with open(article_path) as file:
         body = file.read()
-    end_body = start_body = "boo"
-    for dif in diff_list:
-        if dif.id not in diff_dict:
-            break
+    end_body = start_body = ""
+    next_diff = prev_diff = None
+    for c, dif in enumerate(diff_list):
+        #if dif.id not in diff_dict:
+        #    break
         if dif.id == diff_2.id:
             end_body = body
+            if c != 0:
+                next_diff = diff_list[c - 1]
         elif dif.id == diff_1.id:
             start_body = body
+            if c != len(diff_list) - 1:
+                prev_diff = diff_list[c + 1]
+            break
         body = work.transform.backwards_transform(body, diff_dict[dif.id][0], diff_dict[dif.id][1])
+    html = wikify.simple_wikify(body, wiki)
 
-    return start_body + "\n---\n" + end_body
+    #return start_body + "\n---\n" + end_body
+    return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff_2.id, next_diff = next_diff, prev_diff = prev_diff, start_body = start_body, end_body = end_body, start_id = diff_1.id, comparision_mode = True)
 
 
