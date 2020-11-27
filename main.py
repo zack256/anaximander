@@ -379,13 +379,16 @@ def user_can_read_article(user, wiki):
         return clearance >= 1
     return True
 
+def get_article_cs(wiki, name):
+    return Article.query.filter((Article.wiki_id == wiki.id) & (sql_func.binary(Article.name) == name)).first()
+
 def create_article(wiki, name, body, desc, creator):
     if not user_can_create_article(creator, wiki):
         return "Insufficient roles to create an article on this wiki."
     name = name.replace(" ", "_")
     if not restrict.check_if_valid_wiki_article_name(name):
         return "Invalid article name."
-    already = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == name)).first()
+    already = get_article_cs(wiki, name)
     if already:
         return "Article already in database."
     article_path = get_article_path(wiki.name, name)
@@ -440,7 +443,7 @@ def article_page_handle(reqd_w, reqd_a):
         return "Wiki not found!"
     if not user_can_read_article(current_user, wiki):
         return "Insufficient roles to read this article."
-    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    article = get_article_cs(wiki, reqd_a)
     if article == None:
         return "Article not found!"
     article_path = article_in_files(wiki.name, article.name)
@@ -458,7 +461,7 @@ def article_edit_page_handle(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
     if wiki == None:
         return "Wiki not found!"
-    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    article = get_article_cs(wiki, reqd_a)
     if article == None:
         return "Article not found!"
     if not user_can_edit_article(current_user, wiki):
@@ -494,7 +497,7 @@ def edit_article_form_handler(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
     if wiki == None:
         return "Wiki not found!"
-    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    article = get_article_cs(wiki, reqd_a)
     if article == None:
         return "Article not found!"
     if not article_in_files(wiki.name, article.name):
@@ -621,7 +624,7 @@ def article_history_page_handle(reqd_w, reqd_a):
     wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
     if wiki == None:
         return "Wiki not found!"
-    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    article = get_article_cs(wiki, reqd_a)
     if article == None:
         return "Article not found!"
     if not user_can_read_article(current_user, wiki):
@@ -781,7 +784,7 @@ def article_diff_comparision_page(reqd_w, reqd_a):
         return "Wiki not found!"
     if not user_can_read_article(current_user, wiki):
         return "Insufficient roles to read this article."
-    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.name == reqd_a)).first()
+    article = get_article_cs(wiki, reqd_a)
     if article == None:
         return "Article not found!"
     diff_list = Diff.query.filter(Diff.article_id == article.id).order_by(Diff.created.desc()).all()
