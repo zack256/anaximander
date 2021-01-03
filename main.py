@@ -106,6 +106,7 @@ class Article(db.Model):
     name = db.Column(db.String(80), nullable = False)
     protection = db.Column(db.Integer) # can be 0 (default) or 1, or 2 for public wikis. hafta elaborate on this.
     created = db.Column(db.DateTime())  # unnecessary, can look at first diff to see this.
+    is_redirect = db.Column(db.Boolean())
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))    # same as above.
     wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id', ondelete = 'CASCADE'))
     diffs = db.relationship("Diff", backref = "article")
@@ -118,6 +119,13 @@ class Article(db.Model):
             else:
                 n += i
         return n
+
+    def get_redirect_target(self):
+        if not self.is_redirect:
+            return None
+        with open(get_article_path(self.wiki.name, self.name)) as fi:
+            body = fi.read()
+        return utils.is_redirect(body)
 
 class Diff(db.Model):
     __tablename__ = "diffs"
@@ -149,7 +157,6 @@ def home_page_handler():
         elif wiki.privacy != 2:
             wiki_clearances[wiki.id] = -1
     shown_wikis = [wi for wi in all_wikis if wi.id in wiki_clearances]
-    app.logger.error([shown_wikis, wiki_clearances])
     shown_wikis.sort(key = lambda x : (-wiki_clearances[x.id], x.full))
     return render_template("index.html", wikis = shown_wikis, wiki_clearances = wiki_clearances)
 
@@ -326,7 +333,8 @@ def wiki_home_page_handler(requested):
     if not user_can_read_article(current_user, wiki):
         return "Insufficient roles to read this article."
     creator = User.query.join(Member).join(Wiki).filter((Member.wiki_id == wiki.id) & (Member.clearance == 4)).first()
-    articles = sorted(wiki.articles, key = lambda x : x.name)
+    #articles = sorted(wiki.articles, key = lambda x : x.name)
+    articles = Article.query.filter((Article.wiki_id == wiki.id) & (Article.is_redirect == False)).order_by(Article.name).all()
     return render_template("wiki.html", wiki = wiki, creator = creator, articles = articles)
 
 @app.route("/forms/add-wiki/", methods = ["POST"])
@@ -352,7 +360,8 @@ def add_article_pg_handler(requested):
         article_name = request.form["name"]
         body = body.replace("\r", "")
         html = wikify.simple_wikify(body, wiki)
-        return render_template("create_article.html", wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, article_name = article_name)
+        target = utils.is_redirect(body)
+        return render_template("create_article.html", wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, article_name = article_name, redirect_target = target)
 
     return render_template("create_article.html", wiki = wiki)
 
@@ -399,11 +408,13 @@ def create_article(wiki, name, body, desc, creator):
         return "Article body cannot be blank."
     with open(article_path, "w") as file:
         file.write(body)
+    is_redirect = bool(utils.is_redirect(body))
     created = datetime.datetime.now()
     new_article = Article()
     new_article.name = name
     new_article.protection = 0
     new_article.created = created
+    new_article.is_redirect = is_redirect
     new_article.creator_id = creator.id
     new_article.wiki_id = wiki.id
     db.session.add(new_article)
@@ -480,7 +491,8 @@ def article_edit_page_handle(reqd_w, reqd_a):
         minor = request.form.get("minor")
         body = body.replace("\r", "")
         html = wikify.simple_wikify(body, wiki)
-        return render_template("edit_article.html", article = article, wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, minor = minor)
+        target = utils.is_redirect(body)
+        return render_template("edit_article.html", article = article, wiki = wiki, article_text = body, article_html = html, preview = True, desc = desc, minor = minor, redirect_target = target)
 
     with open(article_path) as fi:
         text = fi.read()
@@ -543,6 +555,7 @@ def edit_article(wiki, article, body, desc, minor, editor):
     for addition in additions:
         add_sub_diff(1, addition[0], addition[1], diff)
     diff.created = datetime.datetime.now()
+    article.is_redirect = bool(utils.is_redirect(body))
     db.session.commit()
     with open(article_path, "w") as file2:
         file2.write(body)
