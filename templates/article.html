@@ -7,7 +7,11 @@
 <h3 class = "title is-3">{{ a_n }}</h3>
 <h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "{{ home_url }}/">Wiki Home</a> | <a href = "{{ article_url }}/edit/">Edit Article</a> | <a href = "{{ article_url }}/history/">View History</a></h5>
 <br/>
+{% if redirect_target %}
+<p>This page redirects to <a href = "{{ home_url }}/articles/{{ redirect_target }}/">{{ redirect_target }}.</a></p>
+{% else %}
 {{ article_html|safe }}
+{% endif %}
 <br/>
 <h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
 {% endblock %}

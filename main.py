@@ -451,9 +451,13 @@ def article_page_handle(reqd_w, reqd_a):
         return "Article not found in file system!"
     with open(article_path) as fi:
         text = fi.read()
+    ignore_redirect = request.args.get("redirect") == "no"
+    target = utils.is_redirect(text)
+    if target and not ignore_redirect:
+        return redirect("/wikis/{}/articles/{}/".format(reqd_w, target))
     #html = wikify.wikify(text, wiki)
     html = wikify.simple_wikify(text, wiki)
-    return render_template("article.html", article = article, wiki = wiki, article_html = html)
+    return render_template("article.html", article = article, wiki = wiki, article_html = html, redirect_target = target)
 
 @app.route("/wikis/<reqd_w>/articles/<reqd_a>/edit/", methods = ["GET", "POST"])
 @login_required

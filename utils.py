@@ -9,3 +9,9 @@ def next_version(current, change = 2):
     elif change == 0:   # major. "1.2.3" -> "2.0.0"
         new = str(int(current[:idx1]) + 1) + ".0.0"
     return new
+
+def is_redirect(text):
+    stripped = text.strip()
+    if stripped[:4] != "{{R|" or stripped[-2:] != "}}":
+        return None
+    return stripped[4:-2]
