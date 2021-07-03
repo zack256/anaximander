@@ -7,7 +7,7 @@
 <p>Created : {{ wiki.created }} by <a href = "/users/{{ creator.username }}/">{{ creator.username }}</a></p>
 <p>Short Name : {{ wiki.name }}</p>
 <p><a href = "{{ home_url }}/new/article/">Create a New Article</a> | <a href = "{{ home_url }}/meta/random/">Random Article</a> | <a href = "{{ home_url }}/meta/settings/">Wiki Settings</a> | <a href = "{{ home_url }}/meta/members/">Wiki Members</a></p>
-<h5 class = "subtitle is-5">Article List</h5>
+<h5 class = "subtitle is-5">Article selection</h5>
 <div class = "content">
     <ul>
     {% for article in articles %}
@@ -16,6 +16,7 @@
         </li>
     {% endfor %}
     </ul>
+    <p><em><a href = "{{ home_url }}/meta/articles/">Full list</a></em></p>
 </div>
 <h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
 {% endblock %}

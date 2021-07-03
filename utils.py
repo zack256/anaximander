@@ -14,4 +14,6 @@ def is_redirect(text):
     stripped = text.strip()
     if stripped[:4] != "{{R|" or stripped[-2:] != "}}":
         return None
-    return stripped[4:-2]
+    raw_name = stripped[4:-2]
+    raw_name.replace(" ", "_")
+    return raw_name[0].upper() + raw_name[1:]

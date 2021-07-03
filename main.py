@@ -334,8 +334,19 @@ def wiki_home_page_handler(requested):
         return "Insufficient roles to read this article."
     creator = User.query.join(Member).join(Wiki).filter((Member.wiki_id == wiki.id) & (Member.clearance == 4)).first()
     #articles = sorted(wiki.articles, key = lambda x : x.name)
+    #articles = Article.query.filter((Article.wiki_id == wiki.id) & (Article.is_redirect == False)).order_by(Article.name).all()
+    random_articles = Article.query.filter((Article.wiki_id == wiki.id) & (Article.is_redirect == False)).order_by(sql_func.random()).limit(10).all()
+    return render_template("wiki.html", wiki = wiki, creator = creator, articles = random_articles)
+
+@app.route("/wikis/<reqd_w>/meta/articles/")
+def all_articles_of_wiki_page(reqd_w):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_read_article(current_user, wiki):
+        return "Insufficient roles to read this article."
     articles = Article.query.filter((Article.wiki_id == wiki.id) & (Article.is_redirect == False)).order_by(Article.name).all()
-    return render_template("wiki.html", wiki = wiki, creator = creator, articles = articles)
+    return render_template("all_articles.html", wiki = wiki, articles = articles)
 
 @app.route("/forms/add-wiki/", methods = ["POST"])
 @login_required
@@ -843,5 +854,4 @@ def article_diff_comparision_page(reqd_w, reqd_a):
 
     #return start_body + "\n---\n" + end_body
     return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff_2.id, next_diff = next_diff, prev_diff = prev_diff, start_body = start_body, end_body = end_body, start_id = diff_1.id, comparision_mode = True)
-
 
