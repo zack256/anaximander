@@ -6,9 +6,9 @@
 <h5 class = "subtitle is-5">Written by <a href = "/news/authors/{{ author.username }}/">{{ author.username }}</a> at {{ date_made }} EST.</h5>
 <br/>
 {% if tags|length > 0 %}
-<div class="tags are-medium">
+<div class="buttons are-small">
     {% for tag in tags %}
-    <span class="tag is-info news-tag"><a href = "/news/tags/{{ tag.name }}/">{{ tag.name }}</a></span>
+    <a href = "/news/tags/{{ tag.name }}/" class = "button is-info is-small news-tag">{{ tag.name }}</a>
     {% endfor %}
 </div>
 {% else %}

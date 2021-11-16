@@ -12,7 +12,7 @@
 <p>Previewing edits.</p>
 <hr>
 {% if redirect_target %}
-<p>This page will redirect to <a href = "{{ home_url }}/articles/{{ redirect_target }}/">{{ redirect_target }}.</a></p>
+<p>This page will redirect to <a href = "{{ home_url }}/articles/{{ redirect_target }}/">{{ redirect_target|replace("_", " ") }}.</a></p>
 {% else %}
 {{ article_html|safe }}
 {% endif %}

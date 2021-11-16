@@ -56,7 +56,7 @@
         {% for tag in tags %}
         {% set author = users_dict[tag.author_id] %}
         <tr>
-            <td><span class="tag is-info news-tag is-medium"><a href = "/news/tags/{{ tag.name }}/">{{ tag.name }}</a></span></td>
+            <td><a href = "/news/tags/{{ tag.name }}/" class = "button is-info is-small news-tag">{{ tag.name }}</a></td>
             <td>{{ tag.description }}</td>
             <td>{{ tag.created }} by <a href = "/users/{{ author.username }}/">{{ author.username }}</a></td>
             <td><button class = "button is-primary" onclick = "updateEditTagModal('{{ tag.id }}', tagObj); activateModal('editTag');">Edit</button></td>
