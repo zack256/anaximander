@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set a_n = article.readable_name() %}
+{% block title %}{{ a_n }} - Move Article{% endblock %}
+{% block content %}
+{% set home_url = "/wikis/" + wiki.name %}
+{% set article_url = home_url + "/articles/" + article.name %}
+<h3 class = "title is-3">{{ a_n }} - Move Article</h3>
+<h5 class = "subtitle is-5">{{ wiki.full }} - <a href = "{{ home_url }}/">Wiki Home</a> | <a href = "{{ article_url }}/">Read Article</a> | <a href = "{{ article_url }}/edit/">Edit Article</a> | <a href = "{{ article_url }}/history/">View History</a></h5>
+<br/>
+<div class = "content">
+    <form method = "POST" action = "/wikis/{{ wiki.name }}/forms/move-article/" id = "moveArticleForm" onsubmit = "if (moveArticleSubmitted) { return false; } else { if (moveArticleCheck()) { moveArticleSubmitted = true; return true; } else { return false; } }"></form>
+    <input type = "hidden" name = "a_id" value = "{{ article.id }}" form = "moveArticleForm">
+    <input class = "input" type = "text" name = "name" maxlength = "80" pattern = "^([ ]?[a-zA-Z0-9().,!~*'\-[\]{}])+$" form = "moveArticleForm" required = "required">
+</div>
+<br/>
+<div class = "buttons">
+    <script>var moveArticleSubmitted = false;</script>
+    <button class = "button is-success" type = "submit" form = "moveArticleForm">Move</button>
+    <button class = "button is-danger" type = "reset" form = "moveArticleForm">Cancel</button>
+</div>
+<h3 class = "subtitle is-5"><a href = "/">Home</a></h3>
+{% endblock %}

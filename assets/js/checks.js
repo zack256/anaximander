@@ -44,3 +44,7 @@ function editTagCheck () {
 function editWikiSettingsCheck () {
     return baseFinalCheck("Are you sure you want to edit the settings of this wiki?");
 }
+
+function moveArticleCheck () {
+    return baseFinalCheck("Are you sure you want to move this article?");
+}

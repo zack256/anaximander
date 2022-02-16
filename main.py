@@ -38,6 +38,7 @@ class User(db.Model, UserMixin):
     wikis = db.relationship("Member", backref = "user_m")
     articles = db.relationship("Article", backref = "creator")
     diffs = db.relationship("Diff", backref = "editor")
+    renamed_articles = db.relationship("PArticleName", backref = "changer")
 
 class Role(db.Model):
     id = db.Column(db.Integer(), primary_key = True)
@@ -110,6 +111,7 @@ class Article(db.Model):
     creator_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))    # same as above.
     wiki_id = db.Column(db.Integer(), db.ForeignKey('wikis.id', ondelete = 'CASCADE'))
     diffs = db.relationship("Diff", backref = "article")
+    previous_names = db.relationship("PArticleName", backref = "article")
 
     def readable_name(self):
         n = ""
@@ -126,6 +128,14 @@ class Article(db.Model):
         with open(get_article_path(self.wiki.name, self.name)) as fi:
             body = fi.read()
         return utils.is_redirect(body)
+
+class PArticleName(db.Model):
+    __tablename__ = "p_article_names"
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(80), nullable = False)
+    changed = db.Column(db.DateTime())
+    changer_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete = 'CASCADE'))
+    article_id = db.Column(db.Integer(), db.ForeignKey('articles.id', ondelete = 'CASCADE'))
 
 class Diff(db.Model):
     __tablename__ = "diffs"
@@ -378,11 +388,14 @@ def add_article_pg_handler(requested):
 
 def user_clearance_level(user, wiki):
     if not user.is_authenticated:
-        return -1
+        return -2       # err, will fix :)
     member = Member.query.filter((Member.wiki_id == wiki.id) & (Member.user_id == user.id)).first()
     return member.clearance if member else -1
 
 def user_can_create_article(user, wiki):
+    return user_can_edit_article(user, wiki)  # for now.
+
+def user_can_move_article(user, wiki):
     return user_can_edit_article(user, wiki)  # for now.
 
 def user_can_edit_article(user, wiki):
@@ -391,7 +404,7 @@ def user_can_edit_article(user, wiki):
         return clearance >= 2
     elif wiki.privacy == 2:
         return clearance >= 3
-    return clearance != 0
+    return clearance not in [0, -2]
 
 def user_can_read_article(user, wiki):
     clearance = user_clearance_level(user, wiki)
@@ -716,6 +729,58 @@ def article_revision_page(reqd_w, reqd_a, reqd_d):
         body = work.transform.backwards_transform(body, diff_dict[dif.id][0], diff_dict[dif.id][1])
     html = wikify.simple_wikify(body, wiki)
     return render_template("article_revision.html", article = article, wiki = wiki, article_html = html, revision = diff.id, next_diff = next_diff, prev_diff = prev_diff)
+
+@app.route("/wikis/<reqd_w>/articles/<reqd_a>/move/")
+def article_move_page_handle(reqd_w, reqd_a):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    article = get_article_cs(wiki, reqd_a)
+    if article == None:
+        return "Article not found!"
+    if not user_can_move_article(current_user, wiki):
+        return "Insufficient roles to move this article."
+    return render_template("move_article.html", wiki = wiki, article = article)
+
+@app.route("/wikis/<reqd_w>/forms/move-article/", methods = ["POST"])
+@login_required
+def move_article_form_handler(reqd_w):
+    wiki = Wiki.query.filter(Wiki.name == reqd_w).first()
+    if wiki == None:
+        return "Wiki not found!"
+    if not user_can_move_article(current_user, wiki):
+        return "Insufficient roles to move this article."
+    new_name = request.form["name"]
+    article_id = int(request.form["a_id"])
+    article = Article.query.filter((Article.wiki_id == wiki.id) & (Article.id == article_id)).first()
+    if not article:
+        return "article not found!"
+    if article.name == new_name:
+        return "can't rename article to itself!"
+
+    new_name = new_name.replace(" ", "_")
+    if not restrict.check_if_valid_wiki_article_name(new_name):
+        return "Invalid article name."
+    already = get_article_cs(wiki, new_name)
+    if already:
+        return "Article already in database."
+    article_path = get_article_path(wiki.name, new_name)
+    if os.path.isfile(article_path):
+        return "Article not in database, but cannot be added as a file with the same name exists."
+    if new_name == article.name:
+        return "can't rename article to itself!"
+
+    p_a_name = PArticleName(name = article.name, changed = datetime.datetime.now())
+    p_a_name.changer_id = current_user.id
+    p_a_name.article_id = article.id
+    old_name = article.name
+    article.name = new_name
+
+    os.rename(get_article_path(wiki.name, old_name), get_article_path(wiki.name, new_name))
+
+    db.session.add(p_a_name)
+    db.session.commit()
+    return redirect("/wikis/{}/articles/{}/".format(wiki.name, new_name))
 
 @app.route("/wikis/<requested>/meta/settings/")
 def wiki_settings_page_handler(requested):
