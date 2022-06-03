@@ -8,6 +8,18 @@
 <table class = "table is-striped is-fullwidth">
     <tbody>
         <tr>
+            <td>Short Name</td>
+            <td><input name = "name" type = "text" class = "input" maxlength = "80" pattern = "^[a-z0-9\-_]+$" required = "required" form = "edit_wiki_form" value = "{{ wiki.name }}"></td>
+        </tr>
+        <tr>
+            <td>Full Name</td>
+            <td><input name = "full" type = "text" class = "input" maxlength = "80" required = "required" form = "edit_wiki_form" value = "{{ wiki.full }}"></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td><input name = "desc" type = "text" class = "input" maxlength = "200" form = "edit_wiki_form" value = "{{ wiki.description }}"></td>
+        </tr>
+        <tr>
             <td>Wiki Privacy</td>
             <td>
                 <div class = "select">

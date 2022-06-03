@@ -89,7 +89,9 @@
         {% endfor %}
     </tbody>
 </table>
+{% if user_can_edit_clearances %}
 <button class = "button is-primary" onclick = "activateModal('addMemberModal');">Add Member</button>
+{% endif %}
 <h3 class = "subtitle is-5"><a href = "/">Home</a> | <a href = "{{ home_url }}/">Wiki Home</a></h3>
 {% endblock %}
 {% block more_bottom %}

@@ -303,20 +303,29 @@ def news_author_handler(requested):
     article_lists = get_article_list_for_display(articles)
     return render_template("news/author.html", article_lists = article_lists, est_date = get_presentable_date, author = user)
 
-def make_wiki_dirs(wiki_path):
+def get_wiki_path(wiki_name):
+    return config.paths.WIKIS_DIR + wiki_name
+
+def make_wiki_dirs(wiki_name):
+    wiki_path = get_wiki_path(wiki_name)
     os.mkdir(wiki_path)
     os.mkdir(wiki_path + "/articles")
+    return wiki_path
 
-def add_wiki(name, full, description, creator):
+def wiki_quick_check(name):
     if not restrict.check_if_valid_wiki_name(name):
         app.logger.error("Invalid wiki name.")
         return False
     if Wiki.query.filter(Wiki.name == name).first():
         app.logger.error("Wiki already exists!")
         return False
-    wiki_dir_path = config.paths.WIKIS_DIR + name
-    if os.path.isdir(wiki_dir_path):
+    if os.path.isdir(get_wiki_path(name)):
         app.logger.error("Wiki already has a directory that possibly contains files.")
+        return False
+    return True
+
+def add_wiki(name, full, description, creator):
+    if not wiki_quick_check(name):
         return False
     created = datetime.datetime.now()
     new_wiki = Wiki()
@@ -332,7 +341,7 @@ def add_wiki(name, full, description, creator):
     db.session.add(assc)
     db.session.commit()
     #os.mkdir(wiki_dir_path)
-    make_wiki_dirs(wiki_dir_path)
+    make_wiki_dirs(new_wiki.name)
     return True
 
 @app.route("/wikis/<requested>/")
@@ -799,7 +808,26 @@ def edit_wiki_settings_form_handler(reqd_w):
         return "Wiki not found!"
     if user_clearance_level(current_user, wiki) < 3:
         return "Insufficient roles to edit wiki settings."
+    name = request.form["name"]
+    if name != wiki.name:
+        if not wiki_quick_check(name):
+            return "bad wiki name."
+        old_wiki_path = get_wiki_path(wiki.name)
+        new_wiki_path = make_wiki_dirs(name)
+        old_article_dir = os.path.join(old_wiki_path, "articles")
+        new_article_dir = os.path.join(new_wiki_path, "articles")
+        for article in os.listdir(old_article_dir):
+            old_name = os.path.join(old_article_dir, article)
+            new_name = os.path.join(new_article_dir, article)
+            os.rename(old_name, new_name)
+        os.rmdir(old_article_dir)
+        os.rmdir(old_wiki_path)
+    full = request.form["full"]
+    description = request.form["desc"]
     privacy = request.form["wiki_privacy"]
+    wiki.name = name
+    wiki.full = full
+    wiki.description = description
     wiki.privacy = privacy
     db.session.commit()
     return redirect("/wikis/{}/meta/settings/".format(wiki.name))
